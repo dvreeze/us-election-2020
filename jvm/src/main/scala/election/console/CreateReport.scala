@@ -158,6 +158,6 @@ object CreateReport {
       snapshot.totalVotesOfCandidateAsBigDecimal(candidate2),
       0)
 
-    require(candidate1Ok, s"Difference in data for $candidate2")
+    require(candidate2Ok, s"Difference in data for $candidate2")
   }
 }
