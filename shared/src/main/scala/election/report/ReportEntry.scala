@@ -64,9 +64,9 @@ final case class ReportEntry(
     Obj(
       "index" -> Num(index),
       "timestamp" -> Str(timestamp.toString),
-      "deltaSeconds" -> Num(deltaSeconds.toDouble),
-      "totalVotes" -> Num(totalVotes.toDouble),
-      "deltaVotes" -> Num(deltaVotes.toDouble),
+      "delta_seconds" -> Num(deltaSeconds.toDouble),
+      "total_votes" -> Num(totalVotes.toDouble),
+      "delta_votes" -> Num(deltaVotes.toDouble),
       candidate1Data.toJsonWithKey,
       candidate2Data.toJsonWithKey,
       thirdPartyData.toJsonWithKey,
@@ -80,9 +80,9 @@ object ReportEntry {
 
     def toJsonWithKey: (String, Obj) = {
       candidate.toString -> Obj(
-        "voteShare" -> Num(voteShare.toDouble),
-        "totalVotes" -> Num(totalVotes.toDouble),
-        "deltaVotes" -> Num(deltaVotes.toDouble))
+        "vote_share" -> Num(voteShare.toDouble),
+        "total_votes" -> Num(totalVotes.toDouble),
+        "delta_votes" -> Num(deltaVotes.toDouble))
     }
   }
 
@@ -119,7 +119,7 @@ object ReportEntry {
     val prevThirdPartyVotes: BigDecimal = prevVoteShareThirdParty * prevSnapshot.totalVotes
 
     val thirdPartyData: CandidateData =
-      CandidateData(Candidate("thirdParty"), voteShareThirdParty, thirdPartyVotes, thirdPartyVotes - prevThirdPartyVotes)
+      CandidateData(Candidate("other"), voteShareThirdParty, thirdPartyVotes, thirdPartyVotes - prevThirdPartyVotes)
 
     ReportEntry(
       snapshot.index,

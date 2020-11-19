@@ -17,45 +17,88 @@
 package election.console
 
 import java.io.File
+import java.io.FileWriter
+
+import scala.util.Try
 
 import election.data.Candidate
 import election.data.VotingTimeSeries
+import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.report.ReportEntry
+import election.report.ReportEntry.CandidateData
 import election.report.TimeSeriesReport
 import ujson._
 
 /**
- * Creates a JSON report of the time series in the US 2020 election voting data set of a given state. The report is more informative
+ * Creates a JSON report of the time series in the US 2020 election voting data set (of 1 or more states). The report is more informative
  * to a reader than the input JSON, because voting totals (per candidate) are shown, as well as deltas compared to the preceding
- * voting shapshots.
+ * voting shapshots. This program can create multiple reports for all JSON input directly under an input directory, if an
+ * input directory is given instead of an input file.
+ *
+ * Program arguments: the input JSON (or directory), output directory, optional candidate 1, optional candidate 2.
+ *
+ * The default candidates 1 and 2 are "trumpd" and "bidenj", respectively.
+ *
+ * Each output file has the same file name as the input file, but preceded by prefix "report-" in the file name.
  *
  * @author Chris de Vreeze
  */
 object CreateReport {
 
   def main(args: Array[String]): Unit = {
-    require(args.sizeIs == 1 || args.sizeIs == 3, s"Usage: CreateReport <json data set of a state> [<candidate 1> <candidate 2>]")
+    require(
+      args.sizeIs == 2 || args.sizeIs == 4,
+      s"Usage: CreateReport <json data set of a state> <output dir> [<candidate 1> <candidate 2>]")
 
-    val jsonFile = new File(args(0)).ensuring(_.isFile)
+    val jsonFileOrDir: File = new File(args(0))
 
-    val candidate1: Candidate = if (args.sizeIs == 3) Candidate(args(1)) else Candidate.Trump
-    val candidate2: Candidate = if (args.sizeIs == 3) Candidate(args(2)) else Candidate.Biden
+    val outputDir: File = new File(args(1))
+    outputDir.mkdirs()
+    require(outputDir.isDirectory, s"Not a directory: $outputDir")
 
-    val report: TimeSeriesReport = createReport(jsonFile, candidate1, candidate2)
+    val candidate1: Candidate = if (args.sizeIs == 4) Candidate(args(2)) else Candidate.Trump
+    val candidate2: Candidate = if (args.sizeIs == 4) Candidate(args(3)) else Candidate.Biden
 
-    val reportJson: Obj = report.toJson
+    val jsonFiles: Seq[File] = if (jsonFileOrDir.isFile) {
+      Seq(jsonFileOrDir)
+    } else {
+      require(jsonFileOrDir.isDirectory, s"Not a directory: $jsonFileOrDir")
 
-    println(write(reportJson, indent = 2))
+      jsonFileOrDir
+        .listFiles(f => f.isFile && f.getName.endsWith(".json"))
+        .toSeq
+        .sortBy(_.getName)
+    }
+
+    jsonFiles.foreach { f =>
+      println(s"Processing file '$f'")
+
+      Try {
+        val report: TimeSeriesReport = createReport(f, candidate1, candidate2)
+
+        val reportJson: Obj = report.toJson
+
+        val outputFile: File = new File(outputDir, "report-" + f.getName)
+        val fw = new FileWriter(outputFile)
+        writeTo(reportJson, fw, indent = 2)
+        fw.close()
+
+        // Check the report after having written it
+        checkReport(report, readTimeSeries(f, candidate1, candidate2), candidate1, candidate2)
+      }.recover { case t: Exception => println(s"Exception thrown (but report created): $t") }
+    }
   }
 
-  def createReport(jsonInputFile: File, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
+  def readTimeSeries(jsonInputFile: File, candidate1: Candidate, candidate2: Candidate): VotingTimeSeries = {
     val allJsonData: Value = ujson.read(jsonInputFile)
 
     val timeseriesData: Arr = allJsonData("data")("races")(0)("timeseries").arr
 
     val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJson(timeseriesData)
+    timeSeries
+  }
 
-    require(timeSeries.isInChronologicalOrder, s"Not in chronological order")
-
+  def createReport(timeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
     val expectedCandidates: Set[Candidate] = Set(candidate1, candidate2)
 
     require(
@@ -67,13 +110,54 @@ object CreateReport {
     require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate1) > 0L), s"$candidate1 votes not always > 0")
     require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate2) > 0L), s"$candidate2 votes not always > 0")
 
-    require(timeSeries.snapshots.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' snapshot")
-
     require(
       timeSeries.nonEmptySnapshots.forall(_.voteSharesAreWithinBounds),
       s"Vote shares not always within bounds (>= 0 and <= 1, also in total)")
 
+    require(timeSeries.snapshots.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' snapshot")
+
     val report: TimeSeriesReport = TimeSeriesReport.from(timeSeries, candidate1, candidate2)
     report
+  }
+
+  def createReport(jsonInputFile: File, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
+    val timeSeries: VotingTimeSeries = readTimeSeries(jsonInputFile, candidate1, candidate2)
+
+    if (!timeSeries.isInChronologicalOrder) {
+      println(s"${jsonInputFile.getName} not in chronological order (but creating report anyway)!")
+    }
+
+    createReport(timeSeries, candidate1, candidate2)
+  }
+
+  def checkReport(report: TimeSeriesReport, votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): Unit = {
+    report.reportEntries.foreach(entry => checkReportEntry(entry, votingTimeSeries, candidate1, candidate2))
+
+    require(
+      report.reportEntries.size == votingTimeSeries.nonEmptySnapshots.size,
+      s"Expected ${votingTimeSeries.nonEmptySnapshots.size} report entries instead of ${report.reportEntries.size} ones"
+    )
+  }
+
+  def checkReportEntry(reportEntry: ReportEntry, votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): Unit = {
+    val snapshot: IndexedVotingSnapshot = votingTimeSeries.snapshots(reportEntry.index).ensuring(_.index == reportEntry.index)
+
+    require(reportEntry.totalVotes == snapshot.totalVotes, s"Different total votes")
+
+    val candidate1Ok = reportEntry.candidate1Data.copy(deltaVotes = 0) == CandidateData(
+      candidate1,
+      snapshot.voteShareOfCandidate(candidate1),
+      snapshot.totalVotesOfCandidateAsBigDecimal(candidate1),
+      0)
+
+    require(candidate1Ok, s"Difference in data for $candidate1")
+
+    val candidate2Ok = reportEntry.candidate2Data.copy(deltaVotes = 0) == CandidateData(
+      candidate2,
+      snapshot.voteShareOfCandidate(candidate2),
+      snapshot.totalVotesOfCandidateAsBigDecimal(candidate2),
+      0)
+
+    require(candidate1Ok, s"Difference in data for $candidate2")
   }
 }

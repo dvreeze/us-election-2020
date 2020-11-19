@@ -30,7 +30,7 @@ import ujson._
 final case class TimeSeriesReport(reportEntries: Seq[ReportEntry]) {
 
   def toJson: Obj = {
-    Obj("timeSeries" -> Arr(reportEntries.map(_.toJson)))
+    Obj("timeseries" -> Arr(reportEntries.map(_.toJson): _*))
   }
 }
 
