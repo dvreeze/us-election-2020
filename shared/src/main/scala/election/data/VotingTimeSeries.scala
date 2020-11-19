@@ -38,6 +38,10 @@ final case class VotingTimeSeries(snapshots: Seq[IndexedVotingSnapshot]) extends
 
   def sortedChronologically: VotingTimeSeries = VotingTimeSeries(snapshots.sortBy(_.timestamp))
 
+  def snapshotPairs: Seq[(IndexedVotingSnapshot, IndexedVotingSnapshot)] = {
+    snapshots.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
+  }
+
   def nonEmptySnapshotPairs: Seq[(IndexedVotingSnapshot, IndexedVotingSnapshot)] = {
     nonEmptySnapshots.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
   }
