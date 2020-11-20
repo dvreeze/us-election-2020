@@ -17,6 +17,7 @@
 package election.report
 
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 import election.data.Candidate
@@ -60,16 +61,16 @@ final case class ReportEntry(
 
   def deltaVotesThirdParty: BigDecimal = thirdPartyData.deltaVotes
 
-  def toJson: Obj = {
+  def toJsonObj: Obj = {
     Obj(
       "index" -> Num(index),
       "timestamp" -> Str(timestamp.toString),
       "delta_seconds" -> Num(deltaSeconds.toDouble),
       "total_votes" -> Num(totalVotes.toDouble),
       "delta_votes" -> Num(deltaVotes.toDouble),
-      candidate1Data.toJsonWithKey,
-      candidate2Data.toJsonWithKey,
-      thirdPartyData.toJsonWithKey,
+      candidate1Data.toJson,
+      candidate2Data.toJson,
+      thirdPartyData.toJson,
     )
   }
 }
@@ -78,7 +79,7 @@ object ReportEntry {
 
   final case class CandidateData(candidate: Candidate, voteShare: BigDecimal, totalVotes: BigDecimal, deltaVotes: BigDecimal) {
 
-    def toJsonWithKey: (String, Obj) = {
+    def toJson: (String, Obj) = {
       candidate.toString -> Obj(
         "vote_share" -> Num(voteShare.toDouble),
         "total_votes" -> Num(totalVotes.toDouble),
@@ -98,6 +99,15 @@ object ReportEntry {
         snapshot.voteShareOfCandidate(candidate),
         snapshot.totalVotesOfCandidateAsBigDecimal(candidate),
         snapshot.totalVotesOfCandidateAsBigDecimal(candidate) - prevSnapshot.totalVotesOfCandidateAsBigDecimal(candidate)
+      )
+    }
+
+    def fromJson(key: String, jsonObj: Obj): CandidateData = {
+      CandidateData(
+        Candidate(key),
+        BigDecimal(jsonObj("vote_share").num).setScale(3),
+        BigDecimal(jsonObj("total_votes").num).setScale(3),
+        BigDecimal(jsonObj("delta_votes").num).setScale(3)
       )
     }
   }
@@ -127,6 +137,30 @@ object ReportEntry {
       prevSnapshot.timestamp.until(snapshot.timestamp, ChronoUnit.SECONDS),
       snapshot.totalVotes,
       snapshot.totalVotes - prevSnapshot.totalVotes,
+      candidate1Data,
+      candidate2Data,
+      thirdPartyData
+    )
+  }
+
+  def fromJsonObj(jsonObj: Obj): ReportEntry = {
+    val jsonMapEntries: Seq[(String, Value)] = jsonObj.value.toSeq.ensuring(_.sizeIs == 8)
+
+    val candidate1Entry: (String, Value) = jsonMapEntries(5)
+    val candidate1Data: CandidateData = CandidateData.fromJson(candidate1Entry._1, candidate1Entry._2.obj)
+
+    val candidate2Entry: (String, Value) = jsonMapEntries(6)
+    val candidate2Data: CandidateData = CandidateData.fromJson(candidate2Entry._1, candidate2Entry._2.obj)
+
+    val thirdPartyEntry: (String, Value) = jsonMapEntries(7)
+    val thirdPartyData: CandidateData = CandidateData.fromJson(thirdPartyEntry._1, thirdPartyEntry._2.obj)
+
+    ReportEntry(
+      jsonObj("index").num.toInt,
+      ZonedDateTime.parse(jsonObj("timestamp").str, DateTimeFormatter.ISO_DATE_TIME),
+      jsonObj("delta_seconds").num.toLong,
+      jsonObj("total_votes").num.toLong,
+      jsonObj("delta_votes").num.toLong,
       candidate1Data,
       candidate2Data,
       thirdPartyData

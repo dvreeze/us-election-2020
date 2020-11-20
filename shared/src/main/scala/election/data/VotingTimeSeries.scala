@@ -103,8 +103,8 @@ object VotingTimeSeries {
     }
   }
 
-  def fromJson(jsonArr: Arr): VotingTimeSeries = {
-    VotingTimeSeries(jsonArr.value.toSeq.map(v => VotingSnapshot.fromJson(v.obj)).zipWithIndex.map { p =>
+  def fromJsonArr(jsonArr: Arr): VotingTimeSeries = {
+    VotingTimeSeries(jsonArr.value.toSeq.map(v => VotingSnapshot.fromJsonObj(v.obj)).zipWithIndex.map { p =>
       IndexedVotingSnapshot(p._1, p._2)
     })
   }

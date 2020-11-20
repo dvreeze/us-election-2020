@@ -67,7 +67,7 @@ object VotingSnapshot {
     (share * total).setScale(0, BigDecimal.RoundingMode.HALF_UP).toLong
   }
 
-  def fromJson(jsonObj: Obj): VotingSnapshot = {
+  def fromJsonObj(jsonObj: Obj): VotingSnapshot = {
     VotingSnapshot(
       jsonObj("vote_shares").obj.toMap.map { case (k, v) => Candidate(k) -> BigDecimal(v.num) },
       jsonObj("votes").num.toLong,

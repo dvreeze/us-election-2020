@@ -76,7 +76,7 @@ object CreateReport {
       Try {
         val report: TimeSeriesReport = createReport(f, candidate1, candidate2)
 
-        val reportJson: Obj = report.toJson
+        val reportJson: Obj = report.toJsonObj
 
         val outputFile: File = new File(outputDir, "report-" + f.getName)
         val fw = new FileWriter(outputFile)
@@ -85,6 +85,9 @@ object CreateReport {
 
         // Check the report after having written it
         checkReport(report, readTimeSeries(f, candidate1, candidate2), candidate1, candidate2)
+
+        // Check lossless roundtripping
+        require(TimeSeriesReport.fromJsonObj(reportJson) == report, s"Roundtripping to/from JSON not completely lossless")
       }.recover { case t: Exception => println(s"Exception thrown (but report created): $t") }
     }
   }
@@ -94,7 +97,7 @@ object CreateReport {
 
     val timeseriesData: Arr = allJsonData("data")("races")(0)("timeseries").arr
 
-    val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJson(timeseriesData)
+    val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJsonArr(timeseriesData)
     timeSeries
   }
 

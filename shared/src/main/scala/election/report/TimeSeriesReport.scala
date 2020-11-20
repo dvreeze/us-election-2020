@@ -29,8 +29,8 @@ import ujson._
  */
 final case class TimeSeriesReport(reportEntries: Seq[ReportEntry]) {
 
-  def toJson: Obj = {
-    Obj("timeseries" -> Arr(reportEntries.map(_.toJson): _*))
+  def toJsonObj: Obj = {
+    Obj("timeseries" -> Arr(reportEntries.map(_.toJsonObj): _*))
   }
 }
 
@@ -45,6 +45,17 @@ object TimeSeriesReport {
         ReportEntry.from(prevSnapshot, snapshot, candidate1, candidate2)
     }
 
+    TimeSeriesReport(reportEntries)
+  }
+
+  def fromJsonObj(jsonObj: Obj): TimeSeriesReport = {
+    require(jsonObj.value.keySet.contains("timeseries"), s"Missing key 'timeseries'")
+
+    fromJsonArr(jsonObj("timeseries").arr)
+  }
+
+  def fromJsonArr(jsonArr: Arr): TimeSeriesReport = {
+    val reportEntries: Seq[ReportEntry] = jsonArr.value.toSeq.map(v => ReportEntry.fromJsonObj(v.obj))
     TimeSeriesReport(reportEntries)
   }
 }

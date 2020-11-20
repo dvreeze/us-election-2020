@@ -48,9 +48,9 @@ object FindAnomalies {
     println(s"Number of (possibly empty) snapshots in the time series: ${timeseriesData.value.length}")
 
     println(
-      s"Number of non-empty snapshots in the time series: ${timeseriesData.value.count(v => VotingSnapshot.fromJson(v.obj).nonEmpty)}")
+      s"Number of non-empty snapshots in the time series: ${timeseriesData.value.count(v => VotingSnapshot.fromJsonObj(v.obj).nonEmpty)}")
 
-    val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJson(timeseriesData)
+    val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJsonArr(timeseriesData)
 
     require(timeSeries.isInChronologicalOrder, s"Not in chronological order")
 
