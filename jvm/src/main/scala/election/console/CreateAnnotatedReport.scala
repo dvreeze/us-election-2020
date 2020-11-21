@@ -67,6 +67,8 @@ object CreateAnnotatedReport {
         val fw = new FileWriter(outputFile)
         writeTo(annotatedReportJson, fw, indent = 2)
         fw.close()
+
+        require(annotatedReport.report == report, s"Removing the annotations does not yield the same as the input report")
       }.recover { case t: Exception => println(s"Exception thrown (report may or may not have been created): $t") }
     }
   }

@@ -26,6 +26,10 @@ import ujson._
  */
 final case class AnnotatedTimeSeriesReport(reportEntries: Seq[AnnotatedReportEntry]) {
 
+  def report: TimeSeriesReport = {
+    TimeSeriesReport(reportEntries.map(_.reportEntry))
+  }
+
   def anomalies: Seq[String] = {
     Seq.empty // TODO
   }
