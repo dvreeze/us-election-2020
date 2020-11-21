@@ -33,7 +33,7 @@ import ujson._
  * @author Chris de Vreeze
  */
 final case class ReportEntry(
-    index: Int,
+    originalIndex: Int,
     timestamp: ZonedDateTime,
     deltaSeconds: Long,
     totalVotes: Long,
@@ -61,9 +61,30 @@ final case class ReportEntry(
 
   def deltaVotesThirdParty: BigDecimal = thirdPartyData.deltaVotes
 
+  def containsAllOfCandidates(candidates: Set[Candidate]): Boolean = {
+    candidates.subsetOf(Set(candidate1Data.candidate, candidate2Data.candidate))
+  }
+
+  def voteShares: Map[Candidate, BigDecimal] = {
+    List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.voteShare).toMap
+  }
+
+  def totalVotesPerCandidate: Map[Candidate, BigDecimal] = {
+    List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.totalVotes).toMap
+  }
+
+  def deltaVotesPerCandidate: Map[Candidate, BigDecimal] = {
+    List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.deltaVotes).toMap
+  }
+
+  def voteSharesAreWithinBounds: Boolean = {
+    val sum = voteShares.values.sum
+    sum >= 0 && sum <= 1 && voteShares.values.forall(_ >= 0) && voteShares.values.forall(_ <= 1)
+  }
+
   def toJsonObj: Obj = {
     Obj(
-      "index" -> Num(index),
+      "original_index" -> Num(originalIndex),
       "timestamp" -> Str(timestamp.toString),
       "delta_seconds" -> Num(deltaSeconds.toDouble),
       "total_votes" -> Num(totalVotes.toDouble),
@@ -156,7 +177,7 @@ object ReportEntry {
     val thirdPartyData: CandidateData = CandidateData.fromJson(thirdPartyEntry._1, thirdPartyEntry._2.obj)
 
     ReportEntry(
-      jsonObj("index").num.toInt,
+      jsonObj("original_index").num.toInt,
       ZonedDateTime.parse(jsonObj("timestamp").str, DateTimeFormatter.ISO_DATE_TIME),
       jsonObj("delta_seconds").num.toLong,
       jsonObj("total_votes").num.toLong,

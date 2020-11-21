@@ -46,9 +46,7 @@ import ujson._
 object CreateReport {
 
   def main(args: Array[String]): Unit = {
-    require(
-      args.sizeIs == 2 || args.sizeIs == 4,
-      s"Usage: CreateReport <json data set of a state> <output dir> [<candidate 1> <candidate 2>]")
+    require(args.sizeIs == 2 || args.sizeIs == 4, s"Usage: CreateReport <json data set> <output dir> [<candidate 1> <candidate 2>]")
 
     val jsonFileOrDir: File = new File(args(0))
 
@@ -84,15 +82,15 @@ object CreateReport {
         fw.close()
 
         // Check the report after having written it
-        checkReport(report, readTimeSeries(f, candidate1, candidate2), candidate1, candidate2)
+        checkReport(report, readTimeSeries(f), candidate1, candidate2)
 
         // Check lossless roundtripping
         require(TimeSeriesReport.fromJsonObj(reportJson) == report, s"Roundtripping to/from JSON not completely lossless")
-      }.recover { case t: Exception => println(s"Exception thrown (but report created): $t") }
+      }.recover { case t: Exception => println(s"Exception thrown (but report may have been created): $t") }
     }
   }
 
-  def readTimeSeries(jsonInputFile: File, candidate1: Candidate, candidate2: Candidate): VotingTimeSeries = {
+  def readTimeSeries(jsonInputFile: File): VotingTimeSeries = {
     val allJsonData: Value = ujson.read(jsonInputFile)
 
     val timeseriesData: Arr = allJsonData("data")("races")(0)("timeseries").arr
@@ -124,7 +122,7 @@ object CreateReport {
   }
 
   def createReport(jsonInputFile: File, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
-    val timeSeries: VotingTimeSeries = readTimeSeries(jsonInputFile, candidate1, candidate2)
+    val timeSeries: VotingTimeSeries = readTimeSeries(jsonInputFile)
 
     if (!timeSeries.isInChronologicalOrder) {
       println(s"${jsonInputFile.getName} not in chronological order (but creating report anyway)!")
@@ -143,7 +141,8 @@ object CreateReport {
   }
 
   def checkReportEntry(reportEntry: ReportEntry, votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): Unit = {
-    val snapshot: IndexedVotingSnapshot = votingTimeSeries.snapshots(reportEntry.index).ensuring(_.index == reportEntry.index)
+    val snapshot: IndexedVotingSnapshot =
+      votingTimeSeries.snapshots(reportEntry.originalIndex).ensuring(_.index == reportEntry.originalIndex)
 
     require(reportEntry.totalVotes == snapshot.totalVotes, s"Different total votes")
 

@@ -30,9 +30,13 @@ final case class VotingTimeSeries(snapshots: Seq[IndexedVotingSnapshot]) extends
 
   def nonEmptySnapshots: Seq[IndexedVotingSnapshot] = snapshots.filter(_.nonEmpty)
 
+  /**
+   * Returns true if all non-empty snapshots are in chronological order. If 2 subsequent snapshots have the same timestamp,
+   * they are still considered to be in chronological order.
+   */
   def isInChronologicalOrder: Boolean = {
     nonEmptySnapshots.sliding(2).filter(_.sizeIs == 2).forall { xs =>
-      xs.ensuring(_.sizeIs == 2)(0).isBefore(xs(1))
+      !xs.ensuring(_.sizeIs == 2)(0).isAfter(xs(1))
     }
   }
 

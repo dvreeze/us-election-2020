@@ -29,8 +29,30 @@ import ujson._
  */
 final case class TimeSeriesReport(reportEntries: Seq[ReportEntry]) {
 
+  /**
+   * Returns true if all report entries are in chronological order. If 2 subsequent entries have the same timestamp,
+   * they are still considered to be in chronological order. The elapsed seconds of the first report entry are ignored, however.
+   */
+  def isInChronologicalOrder: Boolean = {
+    reportEntries.drop(1).forall(_.deltaSeconds >= 0)
+  }
+
   def toJsonObj: Obj = {
     Obj("timeseries" -> Arr(reportEntries.map(_.toJsonObj): _*))
+  }
+
+  /*
+   * Sorts the entries by the given sort criteria. Of course this breaks the chronological order.
+   */
+  def sortBy(f: ReportEntry => BigDecimal): TimeSeriesReport = {
+    TimeSeriesReport(reportEntries.sortBy(f))
+  }
+
+  /*
+   * Sorts the entries by the given sort criteria, yet in descending order. Of course this breaks the chronological order.
+   */
+  def sortByDesc(f: ReportEntry => BigDecimal): TimeSeriesReport = {
+    TimeSeriesReport(reportEntries.sortBy(f).reverse)
   }
 }
 

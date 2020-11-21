@@ -16,7 +16,7 @@ as every sufficiently awake person knows.
 
 The election result data sets mentioned above were fed to the MSM, who used the data to their advantage, as if there are
 no anomalies to see in the data. See for example `fraud proven`_. Of course anyone can inspect the same data, and find some
-interesting things in there that the MSM failed to report on. Also see `thedonaldwin`_, where you can find a Python script
+interesting things in there that the MSM failed to report on. Again, see `the-switc`_, where you can find a Python script
 analyzing the data.
 
 I wanted to have a look myself at the data, partly using code (written in Scala) doing the same as the Python script. Hence
@@ -29,4 +29,3 @@ Anyway, we should never be silent about the truth. Our future depends on it.
 
 .. _`the-switc`: https://thedonald.win/p/11Q8XQIWRs/-happening-ive-updated-the-switc/
 .. _`fraud proven`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
-.. _`thedonaldwin`: https://thedonald.win
