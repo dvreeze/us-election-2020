@@ -18,11 +18,14 @@ package election.console
 
 import java.io.File
 import java.io.PrintWriter
+import java.time.ZonedDateTime
 
 import scala.io.Codec
 import scala.util.Try
 import scala.util.chaining._
 
+import election.console.ConvertReportToCsv.Line.CandidateColumn
+import election.data.Candidate
 import election.report.ReportEntry
 import election.report.TimeSeriesReport
 import ujson._
@@ -82,22 +85,11 @@ object ConvertReportToCsv {
   def convertReport(report: TimeSeriesReport): Seq[Seq[String]] = {
     val firstEntry: ReportEntry = report.reportEntries.headOption.getOrElse(sys.error(s"Empty report not allowed"))
 
-    val header: Seq[String] = firstEntry.productElementNames
-      .take(5)
-      .toSeq
-      .appendedAll(firstEntry.candidate1Data.productElementNames.drop(1).map(s => s"$s ${firstEntry.candidate1Data.candidate}"))
-      .appendedAll(firstEntry.candidate2Data.productElementNames.drop(1).map(s => s"$s ${firstEntry.candidate2Data.candidate}"))
-      .appendedAll(firstEntry.thirdPartyData.productElementNames.drop(1).map(s => s"$s ${firstEntry.thirdPartyData.candidate}"))
+    val header: Seq[String] = Line
+      .fromReportEntry(firstEntry)
+      .toHeader(firstEntry.candidate1Data.candidate, firstEntry.candidate2Data.candidate, firstEntry.thirdPartyData.candidate)
 
-    val candidateDataFieldCount = firstEntry.candidate1Data.productElementNames.size
-
-    val details: Seq[Seq[String]] = report.reportEntries.map { entry =>
-      (0 until 5)
-        .map(i => entry.productElement(i).toString)
-        .appendedAll(1.until(candidateDataFieldCount).map(i => entry.candidate1Data.productElement(i).toString))
-        .appendedAll(1.until(candidateDataFieldCount).map(i => entry.candidate2Data.productElement(i).toString))
-        .appendedAll(1.until(candidateDataFieldCount).map(i => entry.thirdPartyData.productElement(i).toString))
-    }
+    val details: Seq[Seq[String]] = report.reportEntries.map(entry => Line.fromReportEntry(entry).toDetail)
 
     details.prepended(header)
   }
@@ -105,6 +97,77 @@ object ConvertReportToCsv {
   def writeCsv(csv: Seq[Seq[String]], pw: PrintWriter): Unit = {
     csv.foreach { line =>
       pw.println(line.mkString(columnSeparator))
+    }
+  }
+
+  final case class Line(
+      originalIndex: Int,
+      timestamp: ZonedDateTime,
+      deltaSeconds: Long,
+      totalVotes: Long,
+      deltaVotes: Long,
+      candidate1VoteShare: BigDecimal,
+      candidate1TotalVotes: BigDecimal,
+      candidate1DeltaVotes: BigDecimal,
+      candidate2VoteShare: BigDecimal,
+      candidate2TotalVotes: BigDecimal,
+      candidate2DeltaVotes: BigDecimal,
+      thirdPartyVoteShare: BigDecimal,
+      thirdPartyTotalVotes: BigDecimal,
+      thirdPartyDeltaVotes: BigDecimal
+  ) {
+
+    def toHeader(candidate1: Candidate, candidate2: Candidate, thirdParty: Candidate): Seq[String] = {
+      val candidateColumns: Seq[String] = Seq("voteShare", "totalVotes", "deltaVotes")
+
+      this.productElementNames.toSeq
+        .take(5)
+        .appendedAll(candidateColumns.map(_ + s" $candidate1"))
+        .appendedAll(candidateColumns.map(_ + s" $candidate2"))
+        .appendedAll(candidateColumns.map(_ + s" $thirdParty"))
+    }
+
+    def toDetail: Seq[String] = {
+      Seq(
+        originalIndex.toString,
+        timestamp.toString,
+        deltaSeconds.toString,
+        totalVotes.toString,
+        deltaVotes.toString,
+        candidate1VoteShare.toString,
+        candidate1TotalVotes.toString,
+        candidate1DeltaVotes.toString,
+        candidate2VoteShare.toString,
+        candidate2TotalVotes.toString,
+        candidate2DeltaVotes.toString,
+        thirdPartyVoteShare.toString,
+        thirdPartyTotalVotes.toString,
+        thirdPartyDeltaVotes.toString
+      )
+    }
+  }
+
+  object Line {
+
+    final case class CandidateColumn[A](candidate: Candidate, value: A)
+
+    def fromReportEntry(entry: ReportEntry): Line = {
+      Line(
+        entry.originalIndex,
+        entry.timestamp,
+        entry.deltaSeconds,
+        entry.totalVotes,
+        entry.deltaVotes,
+        entry.candidate1Data.voteShare,
+        entry.candidate1Data.totalVotes,
+        entry.candidate1Data.deltaVotes,
+        entry.candidate2Data.voteShare,
+        entry.candidate2Data.totalVotes,
+        entry.candidate2Data.deltaVotes,
+        entry.thirdPartyData.voteShare,
+        entry.thirdPartyData.totalVotes,
+        entry.thirdPartyData.deltaVotes,
+      )
     }
   }
 
