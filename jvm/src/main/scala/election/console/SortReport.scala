@@ -17,30 +17,61 @@
 package election.console
 
 import java.io.File
+import java.io.FileWriter
+
+import scala.util.Try
+import scala.util.chaining._
 
 import election.report.ReportEntry
 import election.report.TimeSeriesReport
 import ujson._
 
 /**
- * Sorts a report in JSON format by the given sort criteria. Outputs the sorted result to the console.
+ * Sorts a report set in JSON format by the given sort criteria. Outputs the sorted result to the given output directory.
  *
  * @author Chris de Vreeze
  */
 object SortReport {
 
   def main(args: Array[String]): Unit = {
-    require(args.sizeIs == 2, s"Usage: SortReport <json report> <sort criteria name>")
+    require(args.sizeIs == 3, s"Usage: SortReport <json report data set> <output dir> <sort criteria name>")
 
-    val jsonReportFile: File = new File(args(0))
+    val jsonReportFileOrDir: File = new File(args(0))
 
-    val sortCriteria: SortCriteria = SortCriteria.from(args(1))
+    val outputDir: File = new File(args(1))
+    outputDir.mkdirs()
+    require(outputDir.isDirectory, s"Not a directory: $outputDir")
 
-    val report: TimeSeriesReport = readReport(jsonReportFile)
+    val sortCriteria: SortCriteria = SortCriteria.from(args(2))
 
-    val sortedReport: TimeSeriesReport = report.sortByDesc(sortCriteria.sortFunction)
+    val jsonReportFiles: Seq[File] = if (jsonReportFileOrDir.isFile) {
+      Seq(jsonReportFileOrDir)
+    } else {
+      require(jsonReportFileOrDir.isDirectory, s"Not a directory: $jsonReportFileOrDir")
 
-    println(write(sortedReport.toJsonObj, 2))
+      jsonReportFileOrDir
+        .listFiles(f => f.isFile && f.getName.endsWith(".json"))
+        .toSeq
+        .sortBy(_.getName)
+    }
+
+    jsonReportFiles.foreach { f =>
+      println(s"Processing report file '$f'")
+
+      Try {
+        val report: TimeSeriesReport = readReport(f)
+        val sortedReport: TimeSeriesReport = report.sortByDesc(sortCriteria.sortFunction)
+
+        val sortedReportJson: Obj = sortedReport.toJsonObj
+
+        val outputFile: File =
+          new File(outputDir, f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(s => s"sorted-$s-$sortCriteria.json"))
+
+        val fw = new FileWriter(outputFile)
+        writeTo(sortedReportJson, fw, indent = 2)
+        fw.close()
+      }.recover { case t: Exception => println(s"Exception thrown (report may or may not have been created): $t") }
+    }
   }
 
   def readReport(jsonReportInputFile: File): TimeSeriesReport = {
@@ -93,19 +124,13 @@ object SortReport {
     }
   }
 
-  // ...
-
   object SortCriteria {
 
+    val allCriteria: Set[SortCriteria] =
+      Set(MaxDeltaVotes, MaxDeltaVotesCandidate1, MaxDeltaVotesCandidate2, MaxDeltaVotesThirdParty, MaxDiffDeltaVotes)
+
     def from(s: String): SortCriteria = {
-      s match {
-        case "MaxDeltaVotes"           => MaxDeltaVotes
-        case "MaxDeltaVotesCandidate1" => MaxDeltaVotesCandidate1
-        case "MaxDeltaVotesCandidate2" => MaxDeltaVotesCandidate2
-        case "MaxDeltaVotesThirdParty" => MaxDeltaVotesThirdParty
-        case "MaxDiffDeltaVotes"       => MaxDiffDeltaVotes
-        case _                         => sys.error(s"Unknown sort criteria: $s")
-      }
+      allCriteria.find(_.toString == s).getOrElse(sys.error(s"Unknown sort criteria: $s"))
     }
   }
 }
