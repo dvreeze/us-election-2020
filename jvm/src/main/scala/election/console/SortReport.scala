@@ -102,8 +102,8 @@ object SortReport {
         case "MaxDeltaVotes"           => MaxDeltaVotes
         case "MaxDeltaVotesCandidate1" => MaxDeltaVotesCandidate1
         case "MaxDeltaVotesCandidate2" => MaxDeltaVotesCandidate2
-        case "MaxDeltaVotesThirdParty" => MaxDiffDeltaVotes
-        case "MaxDiffDeltaVotes"       => MaxDeltaVotes
+        case "MaxDeltaVotesThirdParty" => MaxDeltaVotesThirdParty
+        case "MaxDiffDeltaVotes"       => MaxDiffDeltaVotes
         case _                         => sys.error(s"Unknown sort criteria: $s")
       }
     }
