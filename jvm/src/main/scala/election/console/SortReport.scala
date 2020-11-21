@@ -30,9 +30,7 @@ import ujson._
 object SortReport {
 
   def main(args: Array[String]): Unit = {
-    require(
-      args.sizeIs == 2,
-      s"Usage: SortReport <json report> <sort criteria name>")
+    require(args.sizeIs == 2, s"Usage: SortReport <json report> <sort criteria name>")
 
     val jsonReportFile: File = new File(args(0))
 
@@ -59,22 +57,39 @@ object SortReport {
 
   case object MaxDeltaVotes extends SortCriteria {
 
-    def sortFunction: ReportEntry => BigDecimal = { (e: ReportEntry) => e.deltaVotes }
+    def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
+      e.deltaVotes
+    }
   }
 
   case object MaxDeltaVotesCandidate1 extends SortCriteria {
 
-    def sortFunction: ReportEntry => BigDecimal = { (e: ReportEntry) => e.deltaVotesCandidate1 }
+    def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
+      e.deltaVotesCandidate1
+    }
   }
 
   case object MaxDeltaVotesCandidate2 extends SortCriteria {
 
-    def sortFunction: ReportEntry => BigDecimal = { (e: ReportEntry) => e.deltaVotesCandidate2 }
+    def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
+      e.deltaVotesCandidate2
+    }
   }
 
   case object MaxDeltaVotesThirdParty extends SortCriteria {
 
-    def sortFunction: ReportEntry => BigDecimal = { (e: ReportEntry) => e.deltaVotesThirdParty }
+    def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
+      e.deltaVotesThirdParty
+    }
+  }
+
+  case object MaxDiffDeltaVotes extends SortCriteria {
+
+    def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
+      val maxDeltaVotes: BigDecimal = e.deltaVotesPerCandidate.values.max
+      val minDeltaVotes: BigDecimal = e.deltaVotesPerCandidate.values.min
+      (maxDeltaVotes - minDeltaVotes).abs
+    }
   }
 
   // ...
@@ -83,11 +98,12 @@ object SortReport {
 
     def from(s: String): SortCriteria = {
       s match {
-        case "MaxDeltaVotes" => MaxDeltaVotes
+        case "MaxDeltaVotes"           => MaxDeltaVotes
         case "MaxDeltaVotesCandidate1" => MaxDeltaVotesCandidate1
         case "MaxDeltaVotesCandidate2" => MaxDeltaVotesCandidate2
-        case "MaxDeltaVotesThirdParty" => MaxDeltaVotesThirdParty
-        case _ => sys.error(s"Unknown sort criteria: $s")
+        case "MaxDeltaVotesThirdParty" => MaxDiffDeltaVotes
+        case "MaxDiffDeltaVotes"       => MaxDeltaVotes
+        case _                         => sys.error(s"Unknown sort criteria: $s")
       }
     }
   }
