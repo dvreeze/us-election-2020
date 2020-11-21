@@ -83,12 +83,13 @@ object SortReport {
     }
   }
 
+  /**
+   * Max difference between delta votes of the 2 main candidates, ignoring the 3rd party.
+   */
   case object MaxDiffDeltaVotes extends SortCriteria {
 
     def sortFunction: ReportEntry => BigDecimal = { e: ReportEntry =>
-      val maxDeltaVotes: BigDecimal = e.deltaVotesPerCandidate.values.max
-      val minDeltaVotes: BigDecimal = e.deltaVotesPerCandidate.values.min
-      (maxDeltaVotes - minDeltaVotes).abs
+      (e.deltaVotesCandidate1 - e.deltaVotesCandidate2).abs
     }
   }
 
