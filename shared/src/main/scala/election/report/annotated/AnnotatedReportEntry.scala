@@ -53,6 +53,16 @@ final case class AnnotatedReportEntry(
       thirdPartyData.candidateData)
   }
 
+  def candidateDataMap: Map[Candidate, AnnotatedCandidateData] = {
+    Seq(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d).toMap
+  }
+
+  def candidate1: Candidate = candidate1Data.candidate
+
+  def candidate2: Candidate = candidate2Data.candidate
+
+  def thirdParty: Candidate = thirdPartyData.candidate
+
   def hasNegativeTotalVotes: Boolean = totalVotes < 0
 
   def hasTotalVotesEqualToZero: Boolean = totalVotes == 0
@@ -61,12 +71,29 @@ final case class AnnotatedReportEntry(
 
   def hasDeltaVotesEqualToZero: Boolean = deltaVotes == 0
 
+  def candidateGainedMoreVotesThanPossible(candidate: Candidate): Boolean = {
+    candidateDataMap.get(candidate).exists(d => deltaVotes > 0 && d.candidateData.deltaVotes > deltaVotes)
+  }
+
+  def candidatesGainedMoreVotesThanPossible: Boolean = {
+    deltaVotes > 0 && candidateDataMap.values.map(_.candidateData.deltaVotes.max(0)).sum > deltaVotes
+  }
+
   def anomalies: Seq[String] = {
     Seq(
       hasNegativeTotalVotes -> s"Negative total of votes",
       hasTotalVotesEqualToZero -> s"Total of votes of 0",
       hasNegativeDeltaVotes -> s"Negative delta of votes",
       hasDeltaVotesEqualToZero -> s"Delta of votes of 0",
+      candidateGainedMoreVotesThanPossible(candidate1) ->
+        s"Candidate $candidate1 gained ${candidate1Data.candidateData.deltaVotes - deltaVotes} more votes than the total votes delta",
+      candidateGainedMoreVotesThanPossible(candidate2) ->
+        s"Candidate $candidate2 gained ${candidate2Data.candidateData.deltaVotes - deltaVotes} more votes than the total votes delta",
+      candidateGainedMoreVotesThanPossible(thirdParty) ->
+        s"Candidate $thirdParty gained ${thirdPartyData.candidateData.deltaVotes - deltaVotes} more votes than the total votes delta",
+      candidatesGainedMoreVotesThanPossible ->
+        (s"Candidates together gained ${candidateDataMap.values.map(_.candidateData.deltaVotes.max(0)).sum - deltaVotes} " +
+          s"more votes than the total votes delta (ignoring negative deltas)")
     ).filter(_._1).map(_._2)
   }
 
