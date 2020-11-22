@@ -27,7 +27,8 @@ import election.queries.LostVotes
 import ujson._
 
 /**
- * Finds certain anomalies in the US 2020 election voting data set of a given state.
+ * Finds certain anomalies in the US 2020 election voting data set of a given state. The input files are in the JSON format
+ * for type VotingTimeSeries.
  *
  * @author Chris de Vreeze
  */

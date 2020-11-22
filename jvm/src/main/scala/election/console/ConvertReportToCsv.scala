@@ -21,17 +21,18 @@ import java.io.PrintWriter
 import java.time.ZonedDateTime
 
 import scala.io.Codec
+import scala.util.Using
 import scala.util.Try
 import scala.util.chaining._
 
-import election.console.ConvertReportToCsv.Line.CandidateColumn
 import election.data.Candidate
 import election.report.ReportEntry
 import election.report.TimeSeriesReport
 import ujson._
 
 /**
- * Converts a report set in JSON format to CSV. Outputs the CSV result to the given output directory.
+ * Converts a report set in JSON format to CSV. Outputs the CSV result to the given output directory. So the input of this
+ * program is the JSON output from program CreateReport, corresponding to type TimeSeriesReport.
  *
  * @author Chris de Vreeze
  */
@@ -68,9 +69,9 @@ object ConvertReportToCsv {
         val outputFile: File =
           new File(outputDir, f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(_ + ".csv"))
 
-        val pw = new PrintWriter(outputFile, Codec.UTF8.toString)
-        writeCsv(csv, pw)
-        pw.close()
+        Using.resource(new PrintWriter(outputFile, Codec.UTF8.toString)) { pw =>
+          writeCsv(csv, pw)
+        }
       }.recover { case t: Exception => println(s"Exception thrown (CSV file may or may not have been created): $t") }
     }
   }

@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileWriter
 
 import scala.util.Try
+import scala.util.Using
 
 import election.data.Candidate
 import election.data.VotingTimeSeries
@@ -39,7 +40,8 @@ import ujson._
  *
  * The default candidates 1 and 2 are "trumpd" and "bidenj", respectively.
  *
- * Each output file has the same file name as the input file, but preceded by prefix "report-" in the file name.
+ * Each output file has the same file name as the input file, but preceded by prefix "report-" in the file name. Each output
+ * file is in the JSON format for type TimeSeriesReport.
  *
  * @author Chris de Vreeze
  */
@@ -76,10 +78,9 @@ object CreateReport {
 
         val reportJson: Obj = report.toJsonObj
 
-        val outputFile: File = new File(outputDir, "report-" + f.getName)
-        val fw = new FileWriter(outputFile)
-        writeTo(reportJson, fw, indent = 2)
-        fw.close()
+        Using.resource(new FileWriter(new File(outputDir, "report-" + f.getName))) { fw =>
+          writeTo(reportJson, fw, indent = 2)
+        }
 
         // Check the report after having written it
         checkReport(report, readTimeSeries(f), candidate1, candidate2)

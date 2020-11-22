@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileWriter
 
 import scala.util.Try
+import scala.util.Using
 
 import election.report.TimeSeriesReport
 import ujson._
@@ -64,9 +65,10 @@ object CreateAnnotatedReport {
         val annotatedReportJson: Obj = annotatedReport.toJsonObj
 
         val outputFile: File = new File(outputDir, "annotated-" + f.getName)
-        val fw = new FileWriter(outputFile)
-        writeTo(annotatedReportJson, fw, indent = 2)
-        fw.close()
+
+        Using.resource(new FileWriter(outputFile)) { fw =>
+          writeTo(annotatedReportJson, fw, indent = 2)
+        }
 
         require(annotatedReport.report == report, s"Removing the annotations does not yield the same as the input report")
       }.recover { case t: Exception => println(s"Exception thrown (report may or may not have been created): $t") }

@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileWriter
 
 import scala.util.Try
+import scala.util.Using
 import scala.util.chaining._
 
 import election.report.ReportEntry
@@ -28,6 +29,9 @@ import ujson._
 
 /**
  * Sorts a report set in JSON format by the given sort criteria. Outputs the sorted result to the given output directory.
+ *
+ * The input reports are in the JSON format for type TimeSeriesReport. That is, the input of this program is the output
+ * from program CreateReport.
  *
  * @author Chris de Vreeze
  */
@@ -64,12 +68,11 @@ object SortReport {
 
         val sortedReportJson: Obj = sortedReport.toJsonObj
 
-        val outputFile: File =
-          new File(outputDir, f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(s => s"sorted-$s-$sortCriteria.json"))
+        val fileName = f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(s => s"sorted-$s-$sortCriteria.json")
 
-        val fw = new FileWriter(outputFile)
-        writeTo(sortedReportJson, fw, indent = 2)
-        fw.close()
+        Using(new FileWriter(new File(outputDir, fileName))) { fw =>
+          writeTo(sortedReportJson, fw, indent = 2)
+        }
       }.recover { case t: Exception => println(s"Exception thrown (report may or may not have been created): $t") }
     }
   }
