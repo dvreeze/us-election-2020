@@ -66,7 +66,7 @@ final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedA
       otherCandidate: Candidate,
       snapshot1: IndexedVotingSnapshot,
       snapshot2: IndexedVotingSnapshot): VoteSwapData = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
     require(Set(candidate, otherCandidate) == Set(candidate1, candidate2), s"Missing candidate 1 and/or 2")
 
     val candidateVotesNow: BigDecimal = snapshot2.totalVotesOfCandidateAsBigDecimal(candidate)
@@ -127,7 +127,7 @@ final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedA
   }
 
   private def voteSwapsOfThirdParty(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): VoteSwapData = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
 
     val candidate: Candidate = if (biasedAgainstCandidate1) candidate1 else candidate2
     val otherCandidate: Candidate = if (biasedAgainstCandidate1) candidate2 else candidate1

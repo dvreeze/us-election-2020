@@ -68,14 +68,14 @@ final case class LostVotes(candidate1: Candidate, candidate2: Candidate)
       candidate: Candidate,
       snapshot1: IndexedVotingSnapshot,
       snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
 
     (snapshot2.voteShareOfCandidate(candidate) < snapshot1.voteShareOfCandidate(candidate) - margin) ||
     (snapshot2.voteShareOfCandidate(candidate) > snapshot1.voteShareOfCandidate(candidate) + margin)
   }
 
   private def totalVotesDecreased(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
 
     snapshot2.totalVotes < snapshot1.totalVotes
   }
@@ -84,7 +84,7 @@ final case class LostVotes(candidate1: Candidate, candidate2: Candidate)
       candidate: Candidate,
       snapshot1: IndexedVotingSnapshot,
       snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
 
     snapshot2.totalVotesOfCandidateAsBigDecimal(candidate) < snapshot1.totalVotesOfCandidateAsBigDecimal(candidate)
   }
