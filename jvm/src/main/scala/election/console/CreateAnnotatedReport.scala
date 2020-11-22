@@ -64,9 +64,7 @@ object CreateAnnotatedReport {
 
         val annotatedReportJson: Obj = annotatedReport.toJsonObj
 
-        val outputFile: File = new File(outputDir, "annotated-" + f.getName)
-
-        Using.resource(new FileWriter(outputFile)) { fw =>
+        Using.resource(new FileWriter(new File(outputDir, "annotated-" + f.getName))) { fw =>
           writeTo(annotatedReportJson, fw, indent = 2)
         }
 

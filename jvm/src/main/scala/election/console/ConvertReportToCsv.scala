@@ -66,10 +66,9 @@ object ConvertReportToCsv {
 
         val csv: Seq[Seq[String]] = convertReport(report)
 
-        val outputFile: File =
-          new File(outputDir, f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(_ + ".csv"))
+        val fileName = f.getName.ensuring(_.endsWith(".json")).dropRight(5).pipe(_ + ".csv")
 
-        Using.resource(new PrintWriter(outputFile, Codec.UTF8.toString)) { pw =>
+        Using.resource(new PrintWriter(new File(outputDir, fileName), Codec.UTF8.toString)) { pw =>
           writeCsv(csv, pw)
         }
       }.recover { case t: Exception => println(s"Exception thrown (CSV file may or may not have been created): $t") }
