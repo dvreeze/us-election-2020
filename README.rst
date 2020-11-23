@@ -105,5 +105,5 @@ about truth, no matter how hard the truth is suppresssed by the "media" and tech
 .. _`readme-data.rst`: https://github.com/dvreeze/us-election-2020/blob/master/jvm/src/main/resources/EdisonData/readme-data.rst
 .. _`Coursier`: https://get-coursier.io/
 .. _`Sarah Westall about voting fraud`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
-.. _ `natural news about voting fraud`: https://www.naturalnews.com/2020-11-11-election-data-analyzed-votes-switched-biden-software.html
+.. _`natural news about voting fraud`: https://www.naturalnews.com/2020-11-11-election-data-analyzed-votes-switched-biden-software.html
 .. _`there is no freedom without truth`: https://www.paulcraigroberts.org/2016/02/02/there-is-no-freedom-without-truth-paul-craig-roberts/
