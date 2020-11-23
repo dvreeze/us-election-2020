@@ -97,6 +97,7 @@ For example, the impossible timeseries entries (for Michigan and Pennsylvania) m
 or `natural news about voting fraud`_ are easy to reproduce here. Add this to all other proof of voting fraud, and we have a
 huge fraud perpetrated against the American people. Personally, it is not about Republicans versus Democrats for me, but
 about truth, no matter how hard the truth is suppresssed by the "media" and tech giants. Again, `there is no freedom without truth`_.
+How relevant that 2016 article is today (November 2020)!
 
 
 .. _`the-switc`: https://thedonald.win/p/11Q8XQIWRs/-happening-ive-updated-the-switc/
