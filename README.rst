@@ -102,7 +102,7 @@ about truth, no matter how hard the truth is suppresssed by the "media" and tech
 .. _`the-switc`: https://thedonald.win/p/11Q8XQIWRs/-happening-ive-updated-the-switc/
 .. _`fraud proven`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
 .. _`USElection2020-NYT-Results`: https://github.com/favstats/USElection2020-NYT-Results
-.. _`readme-data.rst`: https://github.com/dvreeze/us-election-2020/tree/master/shared/src/main/scala/election/data/readme-data.rst
+.. _`readme-data.rst`: https://github.com/dvreeze/us-election-2020/blob/master/jvm/src/main/resources/EdisonData/readme-data.rst
 .. _`Coursier`: https://get-coursier.io/
 .. _`Sarah Westall about voting fraud`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
 .. _ `natural news about voting fraud`: https://www.naturalnews.com/2020-11-11-election-data-analyzed-votes-switched-biden-software.html
