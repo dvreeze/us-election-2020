@@ -25,6 +25,8 @@ import election.data.VotingTimeSeries.IndexedVotingSnapshot
 import election.report.ReportEntry.CandidateData
 import ujson._
 
+import scala.util.chaining._
+
 /**
  * Report entry, corresponding to a voting snapshot and deltas to the preceding voting snapshot.
  *
@@ -65,7 +67,7 @@ final case class ReportEntry(
     candidates.subsetOf(Set(candidate1Data.candidate, candidate2Data.candidate))
   }
 
-  def voteShares: Map[Candidate, BigDecimal] = {
+  def voteSharesPerCandidate: Map[Candidate, BigDecimal] = {
     List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.voteShare).toMap
   }
 
@@ -77,9 +79,13 @@ final case class ReportEntry(
     List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.deltaVotes).toMap
   }
 
+  def deltaVoteSharesPerCandidate: Map[Candidate, BigDecimal] = {
+    List(candidate1Data, candidate2Data, thirdPartyData).map(d => d.candidate -> d.deltaVoteShare).toMap
+  }
+
   def voteSharesAreWithinBounds: Boolean = {
-    val sum = voteShares.values.sum
-    sum >= 0 && sum <= 1 && voteShares.values.forall(_ >= 0) && voteShares.values.forall(_ <= 1)
+    val sum = voteSharesPerCandidate.values.sum
+    sum >= 0 && sum <= 1 && voteSharesPerCandidate.values.forall(_ >= 0) && voteSharesPerCandidate.values.forall(_ <= 1)
   }
 
   def toJsonObj: Obj = {
@@ -98,13 +104,20 @@ final case class ReportEntry(
 
 object ReportEntry {
 
-  final case class CandidateData(candidate: Candidate, voteShare: BigDecimal, totalVotes: BigDecimal, deltaVotes: BigDecimal) {
+  final case class CandidateData(
+      candidate: Candidate,
+      voteShare: BigDecimal,
+      totalVotes: BigDecimal,
+      deltaVotes: BigDecimal,
+      deltaVoteShare: BigDecimal) {
 
     def toJson: (String, Obj) = {
       candidate.toString -> Obj(
         "vote_share" -> Num(voteShare.toDouble),
         "total_votes" -> Num(totalVotes.toDouble),
-        "delta_votes" -> Num(deltaVotes.toDouble))
+        "delta_votes" -> Num(deltaVotes.toDouble),
+        "delta_vote_share" -> Num(deltaVoteShare.toDouble)
+      )
     }
   }
 
@@ -115,21 +128,35 @@ object ReportEntry {
         snapshot: IndexedVotingSnapshot,
         candidate: Candidate
     ): CandidateData = {
+      val deltaVotesOfCandidate: BigDecimal = snapshot.totalVotesOfCandidateAsBigDecimal(candidate) - prevSnapshot
+        .totalVotesOfCandidateAsBigDecimal(candidate)
+      val totalDeltaVotes: Long = snapshot.totalVotes - prevSnapshot.totalVotes
+
       CandidateData(
         candidate,
-        snapshot.voteShareOfCandidate(candidate),
-        snapshot.totalVotesOfCandidateAsBigDecimal(candidate),
-        snapshot.totalVotesOfCandidateAsBigDecimal(candidate) - prevSnapshot.totalVotesOfCandidateAsBigDecimal(candidate)
+        snapshot.voteShareOfCandidate(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        snapshot.totalVotesOfCandidateAsBigDecimal(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        deltaVotesOfCandidate.setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        computeDeltaVoteShare(deltaVotesOfCandidate, totalDeltaVotes).getOrElse(BigDecimal(0)) // Correct?
       )
     }
 
     def fromJson(key: String, jsonObj: Obj): CandidateData = {
       CandidateData(
         Candidate(key),
-        BigDecimal(jsonObj("vote_share").num).setScale(3),
-        BigDecimal(jsonObj("total_votes").num).setScale(3),
-        BigDecimal(jsonObj("delta_votes").num).setScale(3)
+        BigDecimal(jsonObj("vote_share").num).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        BigDecimal(jsonObj("total_votes").num).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        BigDecimal(jsonObj("delta_votes").num).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        BigDecimal(jsonObj("delta_vote_share").num).setScale(3, BigDecimal.RoundingMode.HALF_UP),
       )
+    }
+
+    private[ReportEntry] def computeDeltaVoteShare(deltaVotesOfCandidate: BigDecimal, totalDeltaVotes: Long): Option[BigDecimal] = {
+      if (totalDeltaVotes == 0L) {
+        None
+      } else {
+        Some(deltaVotesOfCandidate / BigDecimal(totalDeltaVotes))
+      }.pipe(_.map(_.setScale(3, BigDecimal.RoundingMode.HALF_UP)))
     }
   }
 
@@ -150,7 +177,13 @@ object ReportEntry {
     val prevThirdPartyVotes: BigDecimal = prevVoteShareThirdParty * prevSnapshot.totalVotes
 
     val thirdPartyData: CandidateData =
-      CandidateData(Candidate("other"), voteShareThirdParty, thirdPartyVotes, thirdPartyVotes - prevThirdPartyVotes)
+      CandidateData(
+        Candidate("other"),
+        voteShareThirdParty,
+        thirdPartyVotes,
+        thirdPartyVotes - prevThirdPartyVotes,
+        BigDecimal(1) - candidate1Data.deltaVoteShare - candidate2Data.deltaVoteShare
+      )
 
     ReportEntry(
       snapshot.index,

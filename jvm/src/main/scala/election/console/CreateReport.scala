@@ -147,18 +147,20 @@ object CreateReport {
 
     require(reportEntry.totalVotes == snapshot.totalVotes, s"Different total votes")
 
-    val candidate1Ok = reportEntry.candidate1Data.copy(deltaVotes = 0) == CandidateData(
+    val candidate1Ok = reportEntry.candidate1Data.copy(deltaVotes = 0, deltaVoteShare = 0) == CandidateData(
       candidate1,
       snapshot.voteShareOfCandidate(candidate1),
       snapshot.totalVotesOfCandidateAsBigDecimal(candidate1),
+      0,
       0)
 
     require(candidate1Ok, s"Difference in data for $candidate1")
 
-    val candidate2Ok = reportEntry.candidate2Data.copy(deltaVotes = 0) == CandidateData(
+    val candidate2Ok = reportEntry.candidate2Data.copy(deltaVotes = 0, deltaVoteShare = 0) == CandidateData(
       candidate2,
       snapshot.voteShareOfCandidate(candidate2),
       snapshot.totalVotesOfCandidateAsBigDecimal(candidate2),
+      0,
       0)
 
     require(candidate2Ok, s"Difference in data for $candidate2")

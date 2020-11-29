@@ -109,16 +109,19 @@ object ConvertReportToCsv {
       candidate1VoteShare: BigDecimal,
       candidate1TotalVotes: BigDecimal,
       candidate1DeltaVotes: BigDecimal,
+      candidate1DeltaVoteShare: BigDecimal,
       candidate2VoteShare: BigDecimal,
       candidate2TotalVotes: BigDecimal,
       candidate2DeltaVotes: BigDecimal,
+      candidate2DeltaVoteShare: BigDecimal,
       thirdPartyVoteShare: BigDecimal,
       thirdPartyTotalVotes: BigDecimal,
-      thirdPartyDeltaVotes: BigDecimal
+      thirdPartyDeltaVotes: BigDecimal,
+      thirdPartyDeltaVoteShare: BigDecimal,
   ) {
 
     def toHeader(candidate1: Candidate, candidate2: Candidate, thirdParty: Candidate): Seq[String] = {
-      val candidateColumns: Seq[String] = Seq("voteShare", "totalVotes", "deltaVotes")
+      val candidateColumns: Seq[String] = Seq("voteShare", "totalVotes", "deltaVotes", "deltaVoteShare")
 
       this.productElementNames.toSeq
         .take(5)
@@ -137,12 +140,15 @@ object ConvertReportToCsv {
         candidate1VoteShare.toString,
         candidate1TotalVotes.toString,
         candidate1DeltaVotes.toString,
+        candidate1DeltaVoteShare.toString,
         candidate2VoteShare.toString,
         candidate2TotalVotes.toString,
         candidate2DeltaVotes.toString,
+        candidate2DeltaVoteShare.toString,
         thirdPartyVoteShare.toString,
         thirdPartyTotalVotes.toString,
-        thirdPartyDeltaVotes.toString
+        thirdPartyDeltaVotes.toString,
+        thirdPartyDeltaVoteShare.toString,
       )
     }
   }
@@ -161,12 +167,15 @@ object ConvertReportToCsv {
         entry.candidate1Data.voteShare,
         entry.candidate1Data.totalVotes,
         entry.candidate1Data.deltaVotes,
+        entry.candidate1Data.deltaVoteShare,
         entry.candidate2Data.voteShare,
         entry.candidate2Data.totalVotes,
         entry.candidate2Data.deltaVotes,
+        entry.candidate2Data.deltaVoteShare,
         entry.thirdPartyData.voteShare,
         entry.thirdPartyData.totalVotes,
         entry.thirdPartyData.deltaVotes,
+        entry.thirdPartyData.deltaVoteShare,
       )
     }
   }
