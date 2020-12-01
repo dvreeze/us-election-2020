@@ -55,9 +55,11 @@ final case class AnnotatedTimeSeriesReport(reportEntries: Seq[AnnotatedReportEnt
       .filter(_._2.nonEmpty)
       .flatMap {
         case (candidate, groups) =>
-          groups.map(group =>
-            s"Candidate $candidate has the same deltaVoteShare of ${group(0)
-              .deltaVoteSharesPerCandidate(candidate)} " + s"${group.size} times in succession, starting with original index ${group(0).originalIndex}")
+          groups.map { group =>
+            val deltaVoteShare = group(0).deltaVoteSharesPerCandidate(candidate)
+            val startIndex = group(0).originalIndex
+            s"Candidate $candidate has the same deltaVoteShare of $deltaVoteShare ${group.size} times in succession, starting with original index $startIndex"
+          }
       }
   }
 
