@@ -67,7 +67,7 @@ object TimeSeriesReport {
 
   def from(votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
     require(votingTimeSeries.voteDumps.nonEmpty, s"Missing vote dumps")
-    require(votingTimeSeries.voteDumps.head.isEmpty, s"First vote dumps not empty (all zeroes), which it must be")
+    require(votingTimeSeries.voteDumps.head.isEmpty, s"First vote dump not empty (all zeroes), which it must be")
 
     val reportEntries: Seq[ReportEntry] = votingTimeSeries.voteDumpPairs.map {
       case (prevVoteDump, voteDump) =>
