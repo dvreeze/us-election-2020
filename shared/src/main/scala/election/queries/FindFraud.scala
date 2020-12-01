@@ -17,7 +17,7 @@
 package election.queries
 
 import election.data.Candidate
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import election.queries.FindFraud.VoteSwapData
 
 /**
@@ -26,7 +26,7 @@ import election.queries.FindFraud.VoteSwapData
  * @author Chris de Vreeze
  */
 final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedAgainstCandidate1: Boolean)
-    extends ((IndexedVotingSnapshot, IndexedVotingSnapshot) => VoteSwapData) {
+    extends ((IndexedVoteDump, IndexedVoteDump) => VoteSwapData) {
   require(candidate1 != candidate2)
 
   /**
@@ -44,46 +44,46 @@ final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedA
    */
   def havingBiasAgainstCandidate2: FindFraud = FindFraud(candidate1, candidate2, biasedAgainstCandidate1 = false)
 
-  def apply(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): VoteSwapData = {
-    requirePrecondition(snapshot1)
-    requirePrecondition(snapshot2)
+  def apply(voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): VoteSwapData = {
+    requirePrecondition(voteDump1)
+    requirePrecondition(voteDump2)
 
-    voteSwaps(candidate1, candidate2, snapshot1, snapshot2)
-      .plus(voteSwaps(candidate2, candidate1, snapshot1, snapshot2))
-      .plus(voteSwapsOfThirdParty(snapshot1, snapshot2))
+    voteSwaps(candidate1, candidate2, voteDump1, voteDump2)
+      .plus(voteSwaps(candidate2, candidate1, voteDump1, voteDump2))
+      .plus(voteSwapsOfThirdParty(voteDump1, voteDump2))
   }
 
   /**
    * Requires that the vote shares are within bounds, and that vote totals are > 0. As a consequence, vote totals of candidates are > 0.
    */
-  private def requirePrecondition(snapshot: IndexedVotingSnapshot): Unit = {
-    require(snapshot.voteSharesAreWithinBounds, s"Vote shares not all within bounds (0 and 1)")
-    require(snapshot.totalVotes > 0, s"Total votes not > 0")
+  private def requirePrecondition(voteDump: IndexedVoteDump): Unit = {
+    require(voteDump.voteSharesAreWithinBounds, s"Vote shares not all within bounds (0 and 1)")
+    require(voteDump.totalVotes > 0, s"Total votes not > 0")
   }
 
   private def voteSwaps(
       candidate: Candidate,
       otherCandidate: Candidate,
-      snapshot1: IndexedVotingSnapshot,
-      snapshot2: IndexedVotingSnapshot): VoteSwapData = {
-    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
+      voteDump1: IndexedVoteDump,
+      voteDump2: IndexedVoteDump): VoteSwapData = {
+    require(!voteDump1.isAfter(voteDump2), s"Vote dump $voteDump1 is after $voteDump2")
     require(Set(candidate, otherCandidate) == Set(candidate1, candidate2), s"Missing candidate 1 and/or 2")
 
-    val candidateVotesNow: BigDecimal = snapshot2.totalVotesOfCandidateAsBigDecimal(candidate)
-    val candidateVotesThen: BigDecimal = snapshot1.totalVotesOfCandidateAsBigDecimal(candidate)
+    val candidateVotesNow: BigDecimal = voteDump2.totalVotesOfCandidateAsBigDecimal(candidate)
+    val candidateVotesThen: BigDecimal = voteDump1.totalVotesOfCandidateAsBigDecimal(candidate)
 
-    val otherCandidateVotesNow: BigDecimal = snapshot2.totalVotesOfCandidateAsBigDecimal(otherCandidate)
-    val otherCandidateVotesThen: BigDecimal = snapshot1.totalVotesOfCandidateAsBigDecimal(otherCandidate)
+    val otherCandidateVotesNow: BigDecimal = voteDump2.totalVotesOfCandidateAsBigDecimal(otherCandidate)
+    val otherCandidateVotesThen: BigDecimal = voteDump1.totalVotesOfCandidateAsBigDecimal(otherCandidate)
 
-    val thirdPartyVotesNow: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(snapshot2)
-    val thirdPartyVotesThen: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(snapshot1)
+    val thirdPartyVotesNow: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(voteDump2)
+    val thirdPartyVotesThen: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(voteDump1)
 
     var voteSwaps: VoteSwapData = VoteSwapData.empty
 
     val candidateIsCandidate1: Boolean = candidate == candidate1
 
-    if (candidateVotesNow < candidateVotesThen && (candidateVotesThen - candidateVotesNow) > margin(snapshot2)) {
-      // The candidate lost votes compared to the preceding snapshot, and lost even more of them than the computed margin
+    if (candidateVotesNow < candidateVotesThen && (candidateVotesThen - candidateVotesNow) > margin(voteDump2)) {
+      // The candidate lost votes compared to the preceding vote dump, and lost even more of them than the computed margin
 
       if (otherCandidateVotesNow > otherCandidateVotesThen || thirdPartyVotesNow > thirdPartyVotesThen) {
         // Yet the other candidate and/or the third party did not lose any votes
@@ -126,25 +126,25 @@ final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedA
     voteSwaps
   }
 
-  private def voteSwapsOfThirdParty(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): VoteSwapData = {
-    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
+  private def voteSwapsOfThirdParty(voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): VoteSwapData = {
+    require(!voteDump1.isAfter(voteDump2), s"Vote dump $voteDump1 is after $voteDump2")
 
     val candidate: Candidate = if (biasedAgainstCandidate1) candidate1 else candidate2
     val otherCandidate: Candidate = if (biasedAgainstCandidate1) candidate2 else candidate1
 
-    val candidateVotesNow: BigDecimal = snapshot2.totalVotesOfCandidateAsBigDecimal(candidate)
-    val candidateVotesThen: BigDecimal = snapshot1.totalVotesOfCandidateAsBigDecimal(candidate)
+    val candidateVotesNow: BigDecimal = voteDump2.totalVotesOfCandidateAsBigDecimal(candidate)
+    val candidateVotesThen: BigDecimal = voteDump1.totalVotesOfCandidateAsBigDecimal(candidate)
 
-    val otherCandidateVotesNow: BigDecimal = snapshot2.totalVotesOfCandidateAsBigDecimal(otherCandidate)
-    val otherCandidateVotesThen: BigDecimal = snapshot1.totalVotesOfCandidateAsBigDecimal(otherCandidate)
+    val otherCandidateVotesNow: BigDecimal = voteDump2.totalVotesOfCandidateAsBigDecimal(otherCandidate)
+    val otherCandidateVotesThen: BigDecimal = voteDump1.totalVotesOfCandidateAsBigDecimal(otherCandidate)
 
-    val thirdPartyVotesNow: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(snapshot2)
-    val thirdPartyVotesThen: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(snapshot1)
+    val thirdPartyVotesNow: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(voteDump2)
+    val thirdPartyVotesThen: BigDecimal = totalVotesOfThirdPartyAsBigDecimal(voteDump1)
 
     var voteSwaps: VoteSwapData = VoteSwapData.empty
 
-    if (thirdPartyVotesNow < thirdPartyVotesThen && (thirdPartyVotesThen - thirdPartyVotesNow) > margin(snapshot2)) {
-      // The third party lost votes compared to the preceding snapshot, and lost even more of them than the computed margin
+    if (thirdPartyVotesNow < thirdPartyVotesThen && (thirdPartyVotesThen - thirdPartyVotesNow) > margin(voteDump2)) {
+      // The third party lost votes compared to the preceding vote dump, and lost even more of them than the computed margin
 
       // Here the Python script is different: thirdPartyVotesNow < thirdPartyVotesThen. Is that a bug in that script, or in this program?
       if (candidateVotesNow > candidateVotesThen || otherCandidateVotesNow > otherCandidateVotesThen) {
@@ -188,17 +188,17 @@ final case class FindFraud(candidate1: Candidate, candidate2: Candidate, biasedA
     voteSwaps
   }
 
-  private def voteShareOfThirdParty(snapshot: IndexedVotingSnapshot): BigDecimal = {
-    val nonThirdPartyVoteShare: BigDecimal = snapshot.voteShares.view.filterKeys(Set(candidate1, candidate2)).values.sum
+  private def voteShareOfThirdParty(voteDump: IndexedVoteDump): BigDecimal = {
+    val nonThirdPartyVoteShare: BigDecimal = voteDump.voteShares.view.filterKeys(Set(candidate1, candidate2)).values.sum
     BigDecimal(1) - nonThirdPartyVoteShare
   }
 
-  private def totalVotesOfThirdPartyAsBigDecimal(snapshot: IndexedVotingSnapshot): BigDecimal = {
-    voteShareOfThirdParty(snapshot) * snapshot.totalVotes
+  private def totalVotesOfThirdPartyAsBigDecimal(voteDump: IndexedVoteDump): BigDecimal = {
+    voteShareOfThirdParty(voteDump) * voteDump.totalVotes
   }
 
-  private def margin(snapshot: IndexedVotingSnapshot): BigDecimal = {
-    (BigDecimal(0.00049999) * snapshot.totalVotes) + 50 // Exactly as in the Python script
+  private def margin(voteDump: IndexedVoteDump): BigDecimal = {
+    (BigDecimal(0.00049999) * voteDump.totalVotes) + 50 // Exactly as in the Python script
   }
 }
 

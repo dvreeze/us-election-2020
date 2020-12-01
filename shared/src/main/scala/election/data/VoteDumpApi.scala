@@ -19,15 +19,15 @@ package election.data
 import java.time.ZonedDateTime
 
 /**
- * Common API for voting snapshot data, with or without an array index in a voting time series.
+ * Common API for vote dump data, with or without an array index in a voting time series.
  *
- * This trait is just there for convenience, making a voting snapshot with array index look the same as a voting snapshot without
- * the index, thus preventing the need for "unwrapping" the voting snapshot with index. It may be slight over-engineering,
+ * This trait is just there for convenience, making a vote dump with array index look the same as a vote dump without
+ * the index, thus preventing the need for "unwrapping" the vote dump with index. It may be slight over-engineering,
  * but at the call site it makes things look a bit cleaner and less verbose.
  *
  * @author Chris de Vreeze
  */
-trait VotingSnapshotApi {
+trait VoteDumpApi {
 
   /**
    * Relative shares of the total votes per candidate, as a number between 0 and 1
@@ -56,12 +56,12 @@ trait VotingSnapshotApi {
    */
   def voteSharesAreWithinBounds: Boolean
 
-  def isBefore(other: VotingSnapshotApi): Boolean
+  def isBefore(other: VoteDumpApi): Boolean
 
-  def isAfter(other: VotingSnapshotApi): Boolean
+  def isAfter(other: VoteDumpApi): Boolean
 
   /**
-   * Returns true if the snapshot contains no votes, and can therefore be ignored
+   * Returns true if the vote dump contains no votes, and can therefore be ignored
    */
   def isEmpty: Boolean
 

@@ -66,12 +66,12 @@ final case class TimeSeriesReport(reportEntries: Seq[ReportEntry]) {
 object TimeSeriesReport {
 
   def from(votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): TimeSeriesReport = {
-    require(votingTimeSeries.snapshots.nonEmpty, s"Missing voting snapshots")
-    require(votingTimeSeries.snapshots.head.isEmpty, s"First voting snapshot not empty (all zeroes), which it must be")
+    require(votingTimeSeries.voteDumps.nonEmpty, s"Missing vote dumps")
+    require(votingTimeSeries.voteDumps.head.isEmpty, s"First vote dumps not empty (all zeroes), which it must be")
 
-    val reportEntries: Seq[ReportEntry] = votingTimeSeries.snapshotPairs.map {
-      case (prevSnapshot, snapshot) =>
-        ReportEntry.from(prevSnapshot, snapshot, candidate1, candidate2)
+    val reportEntries: Seq[ReportEntry] = votingTimeSeries.voteDumpPairs.map {
+      case (prevVoteDump, voteDump) =>
+        ReportEntry.from(prevVoteDump, voteDump, candidate1, candidate2)
     }
 
     TimeSeriesReport(reportEntries)

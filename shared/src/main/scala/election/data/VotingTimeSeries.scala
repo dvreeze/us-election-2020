@@ -18,7 +18,7 @@ package election.data
 
 import java.time.ZonedDateTime
 
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import ujson._
 
 /**
@@ -26,90 +26,87 @@ import ujson._
  *
  * @author Chris de Vreeze
  */
-final case class VotingTimeSeries(snapshots: Seq[IndexedVotingSnapshot]) extends AnyVal {
+final case class VotingTimeSeries(voteDumps: Seq[IndexedVoteDump]) extends AnyVal {
 
-  def nonEmptySnapshots: Seq[IndexedVotingSnapshot] = snapshots.filter(_.nonEmpty)
+  def nonEmptyVoteDumps: Seq[IndexedVoteDump] = voteDumps.filter(_.nonEmpty)
 
   /**
-   * Returns true if all non-empty snapshots are in chronological order. If 2 subsequent snapshots have the same timestamp,
+   * Returns true if all non-empty vote dumps are in chronological order. If 2 subsequent vote dumps have the same timestamp,
    * they are still considered to be in chronological order.
    */
   def isInChronologicalOrder: Boolean = {
-    nonEmptySnapshots.sliding(2).filter(_.sizeIs == 2).forall { xs =>
+    nonEmptyVoteDumps.sliding(2).filter(_.sizeIs == 2).forall { xs =>
       !xs.ensuring(_.sizeIs == 2)(0).isAfter(xs(1))
     }
   }
 
-  def sortedChronologically: VotingTimeSeries = VotingTimeSeries(snapshots.sortBy(_.timestamp))
+  def sortedChronologically: VotingTimeSeries = VotingTimeSeries(voteDumps.sortBy(_.timestamp))
 
-  def snapshotPairs: Seq[(IndexedVotingSnapshot, IndexedVotingSnapshot)] = {
-    snapshots.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
+  def voteDumpPairs: Seq[(IndexedVoteDump, IndexedVoteDump)] = {
+    voteDumps.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
   }
 
-  def nonEmptySnapshotPairs: Seq[(IndexedVotingSnapshot, IndexedVotingSnapshot)] = {
-    nonEmptySnapshots.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
+  def nonEmptyVoteDumpPairs: Seq[(IndexedVoteDump, IndexedVoteDump)] = {
+    nonEmptyVoteDumps.sliding(2).filter(_.sizeIs == 2).map(xs => xs(0) -> xs(1)).toSeq
   }
 }
 
 object VotingTimeSeries {
 
   /**
-   * VotingSnapshot with zero-based index in a VotingTimeSeries. Only non-empty ones should be counted.
+   * Vote dump with zero-based index in a VotingTimeSeries. Only non-empty ones should be counted.
    */
-  final case class IndexedVotingSnapshot(snapshot: VotingSnapshot, index: Int) extends VotingSnapshotApi {
+  final case class IndexedVoteDump(voteDump: VoteDump, index: Int) extends VoteDumpApi {
 
-    def voteShares: Map[Candidate, BigDecimal] = snapshot.voteShares
+    def voteShares: Map[Candidate, BigDecimal] = voteDump.voteShares
 
-    def voteShareOfCandidate(candidate: Candidate): BigDecimal = snapshot.voteShareOfCandidate(candidate)
+    def voteShareOfCandidate(candidate: Candidate): BigDecimal = voteDump.voteShareOfCandidate(candidate)
 
-    def totalVotes: Long = snapshot.totalVotes
+    def totalVotes: Long = voteDump.totalVotes
 
-    def timestamp: ZonedDateTime = snapshot.timestamp
+    def timestamp: ZonedDateTime = voteDump.timestamp
 
-    def otherData: Map[String, String] = snapshot.otherData
+    def otherData: Map[String, String] = voteDump.otherData
 
-    def totalVotesOfCandidate(candidate: Candidate): Long = snapshot.totalVotesOfCandidate(candidate)
+    def totalVotesOfCandidate(candidate: Candidate): Long = voteDump.totalVotesOfCandidate(candidate)
 
-    def totalVotesOfCandidateAsBigDecimal(candidate: Candidate): BigDecimal = snapshot.totalVotesOfCandidateAsBigDecimal(candidate)
+    def totalVotesOfCandidateAsBigDecimal(candidate: Candidate): BigDecimal = voteDump.totalVotesOfCandidateAsBigDecimal(candidate)
 
-    def containsAllOfCandidates(candidates: Set[Candidate]): Boolean = snapshot.containsAllOfCandidates(candidates)
+    def containsAllOfCandidates(candidates: Set[Candidate]): Boolean = voteDump.containsAllOfCandidates(candidates)
 
-    def voteSharesAreWithinBounds: Boolean = snapshot.voteSharesAreWithinBounds
+    def voteSharesAreWithinBounds: Boolean = voteDump.voteSharesAreWithinBounds
 
-    def isBefore(other: VotingSnapshotApi): Boolean = snapshot.isBefore(other)
+    def isBefore(other: VoteDumpApi): Boolean = voteDump.isBefore(other)
 
-    def isAfter(other: VotingSnapshotApi): Boolean = snapshot.isAfter(other)
+    def isAfter(other: VoteDumpApi): Boolean = voteDump.isAfter(other)
 
-    def isEmpty: Boolean = snapshot.isEmpty
+    def isEmpty: Boolean = voteDump.isEmpty
 
-    def nonEmpty: Boolean = snapshot.nonEmpty
+    def nonEmpty: Boolean = voteDump.nonEmpty
   }
 
-  object IndexedVotingSnapshot {
+  object IndexedVoteDump {
 
-    def gainedTotalVotes(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): Long = {
-      VotingSnapshot.gainedTotalVotes(snapshot1.snapshot, snapshot2.snapshot)
+    def gainedTotalVotes(voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): Long = {
+      VoteDump.gainedTotalVotes(voteDump1.voteDump, voteDump2.voteDump)
     }
 
-    def gainedVotesOfCandidate(candidate: Candidate, snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): Long = {
-      VotingSnapshot.gainedVotesOfCandidate(candidate, snapshot1.snapshot, snapshot2.snapshot)
+    def gainedVotesOfCandidate(candidate: Candidate, voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): Long = {
+      VoteDump.gainedVotesOfCandidate(candidate, voteDump1.voteDump, voteDump2.voteDump)
     }
 
-    def gainedVotesOfCandidateAsBigDecimal(
-        candidate: Candidate,
-        snapshot1: IndexedVotingSnapshot,
-        snapshot2: IndexedVotingSnapshot): BigDecimal = {
-      VotingSnapshot.gainedVotesOfCandidateAsBigDecimal(candidate, snapshot1.snapshot, snapshot2.snapshot)
+    def gainedVotesOfCandidateAsBigDecimal(candidate: Candidate, voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): BigDecimal = {
+      VoteDump.gainedVotesOfCandidateAsBigDecimal(candidate, voteDump1.voteDump, voteDump2.voteDump)
     }
 
-    def gainedVoteShareOfCandidate(candidate: Candidate, snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): BigDecimal = {
-      VotingSnapshot.gainedVoteShareOfCandidate(candidate, snapshot1.snapshot, snapshot2.snapshot)
+    def gainedVoteShareOfCandidate(candidate: Candidate, voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): BigDecimal = {
+      VoteDump.gainedVoteShareOfCandidate(candidate, voteDump1.voteDump, voteDump2.voteDump)
     }
   }
 
   def fromJsonArr(jsonArr: Arr): VotingTimeSeries = {
-    VotingTimeSeries(jsonArr.value.toSeq.map(v => VotingSnapshot.fromJsonObj(v.obj)).zipWithIndex.map { p =>
-      IndexedVotingSnapshot(p._1, p._2)
+    VotingTimeSeries(jsonArr.value.toSeq.map(v => VoteDump.fromJsonObj(v.obj)).zipWithIndex.map { p =>
+      IndexedVoteDump(p._1, p._2)
     })
   }
 }

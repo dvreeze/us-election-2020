@@ -21,16 +21,16 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 import election.data.Candidate
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import election.report.ReportEntry.CandidateData
 import ujson._
 
 import scala.util.chaining._
 
 /**
- * Report entry, corresponding to a voting snapshot and deltas to the preceding voting snapshot.
+ * Report entry, corresponding to a vote dump and deltas to the preceding vote dump.
  *
- * The report entry immediately gives more information to the reader than the original voting snapshot and its predecessor.
+ * The report entry immediately gives more information to the reader than the original vote dump and its predecessor.
  *
  * @author Chris de Vreeze
  */
@@ -124,18 +124,18 @@ object ReportEntry {
   object CandidateData {
 
     def from(
-        prevSnapshot: IndexedVotingSnapshot,
-        snapshot: IndexedVotingSnapshot,
+        prevVoteDump: IndexedVoteDump,
+        voteDump: IndexedVoteDump,
         candidate: Candidate
     ): CandidateData = {
-      val deltaVotesOfCandidate: BigDecimal = snapshot.totalVotesOfCandidateAsBigDecimal(candidate) - prevSnapshot
+      val deltaVotesOfCandidate: BigDecimal = voteDump.totalVotesOfCandidateAsBigDecimal(candidate) - prevVoteDump
         .totalVotesOfCandidateAsBigDecimal(candidate)
-      val totalDeltaVotes: Long = snapshot.totalVotes - prevSnapshot.totalVotes
+      val totalDeltaVotes: Long = voteDump.totalVotes - prevVoteDump.totalVotes
 
       CandidateData(
         candidate,
-        snapshot.voteShareOfCandidate(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
-        snapshot.totalVotesOfCandidateAsBigDecimal(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        voteDump.voteShareOfCandidate(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
+        voteDump.totalVotesOfCandidateAsBigDecimal(candidate).setScale(3, BigDecimal.RoundingMode.HALF_UP),
         deltaVotesOfCandidate.setScale(3, BigDecimal.RoundingMode.HALF_UP),
         computeDeltaVoteShare(deltaVotesOfCandidate, totalDeltaVotes).getOrElse(BigDecimal(0)) // Correct?
       )
@@ -160,21 +160,17 @@ object ReportEntry {
     }
   }
 
-  def from(
-      prevSnapshot: IndexedVotingSnapshot,
-      snapshot: IndexedVotingSnapshot,
-      candidate1: Candidate,
-      candidate2: Candidate): ReportEntry = {
-    val candidate1Data: CandidateData = CandidateData.from(prevSnapshot, snapshot, candidate1)
-    val candidate2Data: CandidateData = CandidateData.from(prevSnapshot, snapshot, candidate2)
+  def from(prevVoteDump: IndexedVoteDump, voteDump: IndexedVoteDump, candidate1: Candidate, candidate2: Candidate): ReportEntry = {
+    val candidate1Data: CandidateData = CandidateData.from(prevVoteDump, voteDump, candidate1)
+    val candidate2Data: CandidateData = CandidateData.from(prevVoteDump, voteDump, candidate2)
 
-    val voteShareThirdParty: BigDecimal = BigDecimal(1) - snapshot.voteShareOfCandidate(candidate1) - snapshot.voteShareOfCandidate(
+    val voteShareThirdParty: BigDecimal = BigDecimal(1) - voteDump.voteShareOfCandidate(candidate1) - voteDump.voteShareOfCandidate(
       candidate2)
-    val thirdPartyVotes: BigDecimal = voteShareThirdParty * snapshot.totalVotes
+    val thirdPartyVotes: BigDecimal = voteShareThirdParty * voteDump.totalVotes
 
-    val prevVoteShareThirdParty: BigDecimal = BigDecimal(1) - prevSnapshot.voteShareOfCandidate(candidate1) - prevSnapshot
+    val prevVoteShareThirdParty: BigDecimal = BigDecimal(1) - prevVoteDump.voteShareOfCandidate(candidate1) - prevVoteDump
       .voteShareOfCandidate(candidate2)
-    val prevThirdPartyVotes: BigDecimal = prevVoteShareThirdParty * prevSnapshot.totalVotes
+    val prevThirdPartyVotes: BigDecimal = prevVoteShareThirdParty * prevVoteDump.totalVotes
 
     val thirdPartyData: CandidateData =
       CandidateData(
@@ -186,11 +182,11 @@ object ReportEntry {
       )
 
     ReportEntry(
-      snapshot.index,
-      snapshot.timestamp,
-      prevSnapshot.timestamp.until(snapshot.timestamp, ChronoUnit.SECONDS),
-      snapshot.totalVotes,
-      snapshot.totalVotes - prevSnapshot.totalVotes,
+      voteDump.index,
+      voteDump.timestamp,
+      prevVoteDump.timestamp.until(voteDump.timestamp, ChronoUnit.SECONDS),
+      voteDump.totalVotes,
+      voteDump.totalVotes - prevVoteDump.totalVotes,
       candidate1Data,
       candidate2Data,
       thirdPartyData

@@ -17,7 +17,7 @@
 package election.queries
 
 import election.data.Candidate
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import election.queries.LostVotes.VoteLossData
 
 /**
@@ -25,31 +25,30 @@ import election.queries.LostVotes.VoteLossData
  *
  * @author Chris de Vreeze
  */
-final case class LostVotes(candidate1: Candidate, candidate2: Candidate)
-    extends ((IndexedVotingSnapshot, IndexedVotingSnapshot) => VoteLossData) {
+final case class LostVotes(candidate1: Candidate, candidate2: Candidate) extends ((IndexedVoteDump, IndexedVoteDump) => VoteLossData) {
   require(candidate1 != candidate2)
 
-  import IndexedVotingSnapshot._
+  import IndexedVoteDump._
 
-  def apply(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): VoteLossData = {
-    requirePrecondition(snapshot1)
-    requirePrecondition(snapshot2)
+  def apply(voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): VoteLossData = {
+    requirePrecondition(voteDump1)
+    requirePrecondition(voteDump2)
 
     var totalVotesLost: Long = 0L
     var totalVotesLostCandidate1: BigDecimal = 0
     var totalVotesLostCandidate2: BigDecimal = 0
     var totalVotesLostThirdParty: BigDecimal = 0
 
-    if (voteShareChangedSubstantially(candidate1, snapshot1, snapshot2) && voteShareChangedSubstantially(candidate2, snapshot1, snapshot2)) {
-      if (totalVotesDecreased(snapshot1, snapshot2) && votesOfCandidateDecreased(candidate1, snapshot1, snapshot2) && votesOfCandidateDecreased(
+    if (voteShareChangedSubstantially(candidate1, voteDump1, voteDump2) && voteShareChangedSubstantially(candidate2, voteDump1, voteDump2)) {
+      if (totalVotesDecreased(voteDump1, voteDump2) && votesOfCandidateDecreased(candidate1, voteDump1, voteDump2) && votesOfCandidateDecreased(
             candidate2,
-            snapshot1,
-            snapshot2)) {
+            voteDump1,
+            voteDump2)) {
 
-        totalVotesLost = gainedTotalVotes(snapshot1, snapshot2)
-        totalVotesLostCandidate1 = gainedVotesOfCandidateAsBigDecimal(candidate1, snapshot1, snapshot2)
-        totalVotesLostCandidate2 = gainedVotesOfCandidateAsBigDecimal(candidate2, snapshot1, snapshot2)
-        totalVotesLostThirdParty = totalVotesOfThirdPartyAsBigDecimal(snapshot2) - totalVotesOfThirdPartyAsBigDecimal(snapshot1)
+        totalVotesLost = gainedTotalVotes(voteDump1, voteDump2)
+        totalVotesLostCandidate1 = gainedVotesOfCandidateAsBigDecimal(candidate1, voteDump1, voteDump2)
+        totalVotesLostCandidate2 = gainedVotesOfCandidateAsBigDecimal(candidate2, voteDump1, voteDump2)
+        totalVotesLostThirdParty = totalVotesOfThirdPartyAsBigDecimal(voteDump2) - totalVotesOfThirdPartyAsBigDecimal(voteDump1)
       }
     }
 
@@ -59,43 +58,37 @@ final case class LostVotes(candidate1: Candidate, candidate2: Candidate)
   /**
    * Requires that the vote shares are within bounds, and that vote totals are > 0. As a consequence, vote totals of candidates are > 0.
    */
-  private def requirePrecondition(snapshot: IndexedVotingSnapshot): Unit = {
-    require(snapshot.voteSharesAreWithinBounds, s"Vote shares not all within bounds (0 and 1)")
-    require(snapshot.totalVotes > 0, s"Total votes not > 0")
+  private def requirePrecondition(voteDump: IndexedVoteDump): Unit = {
+    require(voteDump.voteSharesAreWithinBounds, s"Vote shares not all within bounds (0 and 1)")
+    require(voteDump.totalVotes > 0, s"Total votes not > 0")
   }
 
-  private def voteShareChangedSubstantially(
-      candidate: Candidate,
-      snapshot1: IndexedVotingSnapshot,
-      snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
+  private def voteShareChangedSubstantially(candidate: Candidate, voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): Boolean = {
+    require(!voteDump1.isAfter(voteDump2), s"Vote dump $voteDump1 is after $voteDump2")
 
-    (snapshot2.voteShareOfCandidate(candidate) < snapshot1.voteShareOfCandidate(candidate) - margin) ||
-    (snapshot2.voteShareOfCandidate(candidate) > snapshot1.voteShareOfCandidate(candidate) + margin)
+    (voteDump2.voteShareOfCandidate(candidate) < voteDump1.voteShareOfCandidate(candidate) - margin) ||
+    (voteDump2.voteShareOfCandidate(candidate) > voteDump1.voteShareOfCandidate(candidate) + margin)
   }
 
-  private def totalVotesDecreased(snapshot1: IndexedVotingSnapshot, snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
+  private def totalVotesDecreased(voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): Boolean = {
+    require(!voteDump1.isAfter(voteDump2), s"Vote dump $voteDump1 is after $voteDump2")
 
-    snapshot2.totalVotes < snapshot1.totalVotes
+    voteDump2.totalVotes < voteDump1.totalVotes
   }
 
-  private def votesOfCandidateDecreased(
-      candidate: Candidate,
-      snapshot1: IndexedVotingSnapshot,
-      snapshot2: IndexedVotingSnapshot): Boolean = {
-    require(!snapshot1.isAfter(snapshot2), s"Snapshot $snapshot1 is after $snapshot2")
+  private def votesOfCandidateDecreased(candidate: Candidate, voteDump1: IndexedVoteDump, voteDump2: IndexedVoteDump): Boolean = {
+    require(!voteDump1.isAfter(voteDump2), s"Vote dump $voteDump1 is after $voteDump2")
 
-    snapshot2.totalVotesOfCandidateAsBigDecimal(candidate) < snapshot1.totalVotesOfCandidateAsBigDecimal(candidate)
+    voteDump2.totalVotesOfCandidateAsBigDecimal(candidate) < voteDump1.totalVotesOfCandidateAsBigDecimal(candidate)
   }
 
-  private def voteShareOfThirdParty(snapshot: IndexedVotingSnapshot): BigDecimal = {
-    val nonThirdPartyVoteShare: BigDecimal = snapshot.voteShares.view.filterKeys(Set(candidate1, candidate2)).values.sum
+  private def voteShareOfThirdParty(voteDump: IndexedVoteDump): BigDecimal = {
+    val nonThirdPartyVoteShare: BigDecimal = voteDump.voteShares.view.filterKeys(Set(candidate1, candidate2)).values.sum
     BigDecimal(1) - nonThirdPartyVoteShare
   }
 
-  private def totalVotesOfThirdPartyAsBigDecimal(snapshot: IndexedVotingSnapshot): BigDecimal = {
-    voteShareOfThirdParty(snapshot) * snapshot.totalVotes
+  private def totalVotesOfThirdPartyAsBigDecimal(voteDump: IndexedVoteDump): BigDecimal = {
+    voteShareOfThirdParty(voteDump) * voteDump.totalVotes
   }
 
   private val margin: BigDecimal = BigDecimal(0.001) // Exactly as in the Python script

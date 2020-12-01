@@ -19,25 +19,25 @@ package election.data
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-import ujson._
+import ujson.Obj
 
 /**
- * One entry or snapshot in the voting time series. Only non-empty ones should be counted.
+ * One entry or vote dump in the voting time series. Only non-empty ones should be counted.
  *
  * @author Chris de Vreeze
  */
-final case class VotingSnapshot(
+final case class VoteDump(
     voteShares: Map[Candidate, BigDecimal],
     totalVotes: Long,
     timestamp: ZonedDateTime,
     otherData: Map[String, String])
-    extends VotingSnapshotApi {
+    extends VoteDumpApi {
 
   def voteShareOfCandidate(candidate: Candidate): BigDecimal = voteShares.getOrElse(candidate, BigDecimal(0))
 
   def totalVotesOfCandidate(candidate: Candidate): Long = {
     // Rounding as we normally expect it, so 2.5 is rounded up to 3 while 2.4 is rounded down to 2.
-    VotingSnapshot.multiply(voteShareOfCandidate(candidate), totalVotes)
+    VoteDump.multiply(voteShareOfCandidate(candidate), totalVotes)
   }
 
   def totalVotesOfCandidateAsBigDecimal(candidate: Candidate): BigDecimal = {
@@ -51,24 +51,24 @@ final case class VotingSnapshot(
     sum >= 0 && sum <= 1 && voteShares.values.forall(_ >= 0) && voteShares.values.forall(_ <= 1)
   }
 
-  def isBefore(other: VotingSnapshotApi): Boolean = timestamp.isBefore(other.timestamp)
+  def isBefore(other: VoteDumpApi): Boolean = timestamp.isBefore(other.timestamp)
 
-  def isAfter(other: VotingSnapshotApi): Boolean = timestamp.isAfter(other.timestamp)
+  def isAfter(other: VoteDumpApi): Boolean = timestamp.isAfter(other.timestamp)
 
   def isEmpty: Boolean = totalVotes == 0
 
   def nonEmpty: Boolean = !isEmpty
 }
 
-object VotingSnapshot {
+object VoteDump {
 
   def multiply(share: BigDecimal, total: Long): Long = {
     // Rounding as we normally expect it, so 2.5 is rounded up to 3 while 2.4 is rounded down to 2.
     (share * total).setScale(0, BigDecimal.RoundingMode.HALF_UP).toLong
   }
 
-  def fromJsonObj(jsonObj: Obj): VotingSnapshot = {
-    VotingSnapshot(
+  def fromJsonObj(jsonObj: Obj): VoteDump = {
+    VoteDump(
       jsonObj("vote_shares").obj.toMap.map { case (k, v) => Candidate(k) -> BigDecimal(v.num) },
       jsonObj("votes").num.toLong,
       ZonedDateTime.parse(jsonObj("timestamp").str, DateTimeFormatter.ISO_DATE_TIME),
@@ -76,27 +76,27 @@ object VotingSnapshot {
     )
   }
 
-  def gainedTotalVotes(snapshot1: VotingSnapshot, snapshot2: VotingSnapshot): Long = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+  def gainedTotalVotes(voteDump1: VoteDump, voteDump2: VoteDump): Long = {
+    require(voteDump1.isBefore(voteDump2), s"Vote dump $voteDump1 is not before $voteDump2")
 
-    snapshot2.totalVotes - snapshot1.totalVotes
+    voteDump2.totalVotes - voteDump1.totalVotes
   }
 
-  def gainedVotesOfCandidate(candidate: Candidate, snapshot1: VotingSnapshot, snapshot2: VotingSnapshot): Long = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+  def gainedVotesOfCandidate(candidate: Candidate, voteDump1: VoteDump, voteDump2: VoteDump): Long = {
+    require(voteDump1.isBefore(voteDump2), s"Vote dump $voteDump1 is not before $voteDump2")
 
-    snapshot2.totalVotesOfCandidate(candidate) - snapshot1.totalVotesOfCandidate(candidate)
+    voteDump2.totalVotesOfCandidate(candidate) - voteDump1.totalVotesOfCandidate(candidate)
   }
 
-  def gainedVotesOfCandidateAsBigDecimal(candidate: Candidate, snapshot1: VotingSnapshot, snapshot2: VotingSnapshot): BigDecimal = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+  def gainedVotesOfCandidateAsBigDecimal(candidate: Candidate, voteDump1: VoteDump, voteDump2: VoteDump): BigDecimal = {
+    require(voteDump1.isBefore(voteDump2), s"Vote dump $voteDump1 is not before $voteDump2")
 
-    snapshot2.totalVotesOfCandidateAsBigDecimal(candidate) - snapshot1.totalVotesOfCandidateAsBigDecimal(candidate)
+    voteDump2.totalVotesOfCandidateAsBigDecimal(candidate) - voteDump1.totalVotesOfCandidateAsBigDecimal(candidate)
   }
 
-  def gainedVoteShareOfCandidate(candidate: Candidate, snapshot1: VotingSnapshot, snapshot2: VotingSnapshot): BigDecimal = {
-    require(snapshot1.isBefore(snapshot2), s"Snapshot $snapshot1 is not before $snapshot2")
+  def gainedVoteShareOfCandidate(candidate: Candidate, voteDump1: VoteDump, voteDump2: VoteDump): BigDecimal = {
+    require(voteDump1.isBefore(voteDump2), s"Vote dump $voteDump1 is not before $voteDump2")
 
-    snapshot2.voteShareOfCandidate(candidate) - snapshot1.voteShareOfCandidate(candidate)
+    voteDump2.voteShareOfCandidate(candidate) - voteDump1.voteShareOfCandidate(candidate)
   }
 }

@@ -24,7 +24,7 @@ import scala.util.Using
 
 import election.data.Candidate
 import election.data.VotingTimeSeries
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import election.report.ReportEntry
 import election.report.ReportEntry.CandidateData
 import election.report.TimeSeriesReport
@@ -104,19 +104,19 @@ object CreateReport {
     val expectedCandidates: Set[Candidate] = Set(candidate1, candidate2)
 
     require(
-      timeSeries.snapshots.forall(_.containsAllOfCandidates(expectedCandidates)),
-      s"Not every snapshot contains candidates ${expectedCandidates.mkString(", ")}"
+      timeSeries.voteDumps.forall(_.containsAllOfCandidates(expectedCandidates)),
+      s"Not every vote dump contains candidates ${expectedCandidates.mkString(", ")}"
     )
 
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotes > 0L), s"Total votes not always > 0")
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate1) > 0L), s"$candidate1 votes not always > 0")
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate2) > 0L), s"$candidate2 votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotes > 0L), s"Total votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotesOfCandidate(candidate1) > 0L), s"$candidate1 votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotesOfCandidate(candidate2) > 0L), s"$candidate2 votes not always > 0")
 
     require(
-      timeSeries.nonEmptySnapshots.forall(_.voteSharesAreWithinBounds),
+      timeSeries.nonEmptyVoteDumps.forall(_.voteSharesAreWithinBounds),
       s"Vote shares not always within bounds (>= 0 and <= 1, also in total)")
 
-    require(timeSeries.snapshots.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' snapshot")
+    require(timeSeries.voteDumps.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' vote dump")
 
     val report: TimeSeriesReport = TimeSeriesReport.from(timeSeries, candidate1, candidate2)
     report
@@ -136,21 +136,21 @@ object CreateReport {
     report.reportEntries.foreach(entry => checkReportEntry(entry, votingTimeSeries, candidate1, candidate2))
 
     require(
-      report.reportEntries.size == votingTimeSeries.nonEmptySnapshots.size,
-      s"Expected ${votingTimeSeries.nonEmptySnapshots.size} report entries instead of ${report.reportEntries.size} ones"
+      report.reportEntries.size == votingTimeSeries.nonEmptyVoteDumps.size,
+      s"Expected ${votingTimeSeries.nonEmptyVoteDumps.size} report entries instead of ${report.reportEntries.size} ones"
     )
   }
 
   def checkReportEntry(reportEntry: ReportEntry, votingTimeSeries: VotingTimeSeries, candidate1: Candidate, candidate2: Candidate): Unit = {
-    val snapshot: IndexedVotingSnapshot =
-      votingTimeSeries.snapshots(reportEntry.originalIndex).ensuring(_.index == reportEntry.originalIndex)
+    val voteDump: IndexedVoteDump =
+      votingTimeSeries.voteDumps(reportEntry.originalIndex).ensuring(_.index == reportEntry.originalIndex)
 
-    require(reportEntry.totalVotes == snapshot.totalVotes, s"Different total votes")
+    require(reportEntry.totalVotes == voteDump.totalVotes, s"Different total votes")
 
     val candidate1Ok = reportEntry.candidate1Data.copy(deltaVotes = 0, deltaVoteShare = 0) == CandidateData(
       candidate1,
-      snapshot.voteShareOfCandidate(candidate1),
-      snapshot.totalVotesOfCandidateAsBigDecimal(candidate1),
+      voteDump.voteShareOfCandidate(candidate1),
+      voteDump.totalVotesOfCandidateAsBigDecimal(candidate1),
       0,
       0)
 
@@ -158,8 +158,8 @@ object CreateReport {
 
     val candidate2Ok = reportEntry.candidate2Data.copy(deltaVotes = 0, deltaVoteShare = 0) == CandidateData(
       candidate2,
-      snapshot.voteShareOfCandidate(candidate2),
-      snapshot.totalVotesOfCandidateAsBigDecimal(candidate2),
+      voteDump.voteShareOfCandidate(candidate2),
+      voteDump.totalVotesOfCandidateAsBigDecimal(candidate2),
       0,
       0)
 

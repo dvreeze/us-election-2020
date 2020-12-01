@@ -19,9 +19,9 @@ package election.console
 import java.io.File
 
 import election.data.Candidate
-import election.data.VotingSnapshot
+import election.data.VoteDump
 import election.data.VotingTimeSeries
-import election.data.VotingTimeSeries.IndexedVotingSnapshot
+import election.data.VotingTimeSeries.IndexedVoteDump
 import election.queries.FindFraud
 import election.queries.LostVotes
 import ujson._
@@ -46,10 +46,9 @@ object FindAnomalies {
 
     val timeseriesData: Arr = allJsonData("data")("races")(0)("timeseries").arr
 
-    println(s"Number of (possibly empty) snapshots in the time series: ${timeseriesData.value.length}")
+    println(s"Number of (possibly empty) vote dumps in the time series: ${timeseriesData.value.length}")
 
-    println(
-      s"Number of non-empty snapshots in the time series: ${timeseriesData.value.count(v => VotingSnapshot.fromJsonObj(v.obj).nonEmpty)}")
+    println(s"Number of non-empty vote dumps in the time series: ${timeseriesData.value.count(v => VoteDump.fromJsonObj(v.obj).nonEmpty)}")
 
     val timeSeries: VotingTimeSeries = VotingTimeSeries.fromJsonArr(timeseriesData)
 
@@ -58,52 +57,52 @@ object FindAnomalies {
     val expectedCandidates: Set[Candidate] = Set(candidate1, candidate2)
 
     require(
-      timeSeries.snapshots.forall(_.containsAllOfCandidates(expectedCandidates)),
-      s"Not every snapshot contains candidates ${expectedCandidates.mkString(", ")}"
+      timeSeries.voteDumps.forall(_.containsAllOfCandidates(expectedCandidates)),
+      s"Not every vote dump contains candidates ${expectedCandidates.mkString(", ")}"
     )
 
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotes > 0L), s"Total votes not always > 0")
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate1) > 0L), s"$candidate1 votes not always > 0")
-    require(timeSeries.nonEmptySnapshots.forall(_.totalVotesOfCandidate(candidate2) > 0L), s"$candidate2 votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotes > 0L), s"Total votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotesOfCandidate(candidate1) > 0L), s"$candidate1 votes not always > 0")
+    require(timeSeries.nonEmptyVoteDumps.forall(_.totalVotesOfCandidate(candidate2) > 0L), s"$candidate2 votes not always > 0")
 
-    require(timeSeries.snapshots.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' snapshot")
+    require(timeSeries.voteDumps.headOption.exists(_.isEmpty), s"Time series not starting with 'empty' vote dump")
 
     require(
-      timeSeries.nonEmptySnapshots.forall(_.voteSharesAreWithinBounds),
+      timeSeries.nonEmptyVoteDumps.forall(_.voteSharesAreWithinBounds),
       s"Vote shares not always within bounds (>= 0 and <= 1, also in total)")
 
-    val snapshotPairsWithDisappearedVotes: Seq[(IndexedVotingSnapshot, IndexedVotingSnapshot)] =
-      timeSeries.nonEmptySnapshotPairs.filter {
-        case (snapshot1, snapshot2) =>
-          snapshot1.totalVotes > snapshot2.totalVotes || {
-            val candidates = snapshot1.voteShares.keySet
-            candidates.exists(c => snapshot1.totalVotesOfCandidate(c) > snapshot2.totalVotesOfCandidate(c))
+    val voteDumpPairsWithDisappearedVotes: Seq[(IndexedVoteDump, IndexedVoteDump)] =
+      timeSeries.nonEmptyVoteDumpPairs.filter {
+        case (voteDump1, voteDump2) =>
+          voteDump1.totalVotes > voteDump2.totalVotes || {
+            val candidates = voteDump1.voteShares.keySet
+            candidates.exists(c => voteDump1.totalVotesOfCandidate(c) > voteDump2.totalVotesOfCandidate(c))
           }
       }
 
     println()
     println(
-      s"Votes disappeared for candidate(s) and/or in total, whether switched or lost (${snapshotPairsWithDisappearedVotes.size} snapshot pairs):")
+      s"Votes disappeared for candidate(s) and/or in total, whether switched or lost (${voteDumpPairsWithDisappearedVotes.size} vote dump pairs):")
 
-    snapshotPairsWithDisappearedVotes.foreach {
-      case (snapshot1, snapshot2) =>
-        println(s"Snapshots ${snapshot1.index} and ${snapshot2.index} (at ${snapshot1.timestamp} and ${snapshot2.timestamp})")
+    voteDumpPairsWithDisappearedVotes.foreach {
+      case (voteDump1, voteDump2) =>
+        println(s"Vote dumps ${voteDump1.index} and ${voteDump2.index} (at ${voteDump1.timestamp} and ${voteDump2.timestamp})")
         println(
-          s"\tDelta $candidate1 votes: ${snapshot2.totalVotesOfCandidate(candidate1) - snapshot1.totalVotesOfCandidate(candidate1)}" +
-            s"  (from ${snapshot1.totalVotesOfCandidate(candidate1)} to ${snapshot2.totalVotesOfCandidate(candidate1)})")
+          s"\tDelta $candidate1 votes: ${voteDump2.totalVotesOfCandidate(candidate1) - voteDump1.totalVotesOfCandidate(candidate1)}" +
+            s"  (from ${voteDump1.totalVotesOfCandidate(candidate1)} to ${voteDump2.totalVotesOfCandidate(candidate1)})")
         println(
-          s"\tDelta $candidate2 votes: ${snapshot2.totalVotesOfCandidate(candidate2) - snapshot1.totalVotesOfCandidate(candidate2)}" +
-            s"  (from ${snapshot1.totalVotesOfCandidate(candidate2)} to ${snapshot2.totalVotesOfCandidate(candidate2)})")
+          s"\tDelta $candidate2 votes: ${voteDump2.totalVotesOfCandidate(candidate2) - voteDump1.totalVotesOfCandidate(candidate2)}" +
+            s"  (from ${voteDump1.totalVotesOfCandidate(candidate2)} to ${voteDump2.totalVotesOfCandidate(candidate2)})")
         println(
-          s"\tDelta total votes: ${snapshot2.totalVotes - snapshot1.totalVotes}" +
-            s"  (from ${snapshot1.totalVotes} to ${snapshot2.totalVotes})")
+          s"\tDelta total votes: ${voteDump2.totalVotes - voteDump1.totalVotes}" +
+            s"  (from ${voteDump1.totalVotes} to ${voteDump2.totalVotes})")
     }
 
     val lostVotes = LostVotes(candidate1, candidate2)
 
-    val voteLoss: LostVotes.VoteLossData = timeSeries.nonEmptySnapshotPairs.foldLeft(LostVotes.VoteLossData.empty) {
-      case (acc, (snapshot1, snapshot2)) =>
-        acc.plus(lostVotes(snapshot1, snapshot2))
+    val voteLoss: LostVotes.VoteLossData = timeSeries.nonEmptyVoteDumpPairs.foldLeft(LostVotes.VoteLossData.empty) {
+      case (acc, (voteDump1, voteDump2)) =>
+        acc.plus(lostVotes(voteDump1, voteDump2))
     }
 
     println()
@@ -115,9 +114,9 @@ object FindAnomalies {
 
     val findFraud: FindFraud = FindFraud(candidate1, candidate2)
 
-    val fraudData: FindFraud.VoteSwapData = timeSeries.nonEmptySnapshotPairs.foldLeft(FindFraud.VoteSwapData.empty) {
-      case (acc, (snapshot1, snapshot2)) =>
-        acc.plus(findFraud(snapshot1, snapshot2))
+    val fraudData: FindFraud.VoteSwapData = timeSeries.nonEmptyVoteDumpPairs.foldLeft(FindFraud.VoteSwapData.empty) {
+      case (acc, (voteDump1, voteDump2)) =>
+        acc.plus(findFraud(voteDump1, voteDump2))
     }
 
     println()
