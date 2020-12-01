@@ -16,6 +16,11 @@
 
 package election.report.annotated
 
+import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
+
+import election.data.Candidate
+import election.report.ReportEntry
 import election.report.TimeSeriesReport
 import ujson._
 
@@ -25,13 +30,35 @@ import ujson._
  * @author Chris de Vreeze
  */
 final case class AnnotatedTimeSeriesReport(reportEntries: Seq[AnnotatedReportEntry]) {
+  require(reportEntries.nonEmpty, s"No report entries found")
+
+  def candidate1: Candidate = reportEntries(0).candidate1Data.candidate
+
+  def candidate2: Candidate = reportEntries(0).candidate2Data.candidate
+
+  def thirdParty: Candidate = reportEntries(0).thirdPartyData.candidate
 
   def report: TimeSeriesReport = {
     TimeSeriesReport(reportEntries.map(_.reportEntry))
   }
 
+  def findReportEntryGroupsHavingSameDeltaVoteShare(candidate: Candidate): Seq[Seq[ReportEntry]] = {
+    findReportEntryGroupsHavingSameDeltaVoteShare(candidate, startIndex = 0, Seq.empty)
+  }
+
   def anomalies: Seq[String] = {
-    Seq.empty // TODO
+    ListMap(
+      candidate1 -> findReportEntryGroupsHavingSameDeltaVoteShare(candidate1),
+      candidate2 -> findReportEntryGroupsHavingSameDeltaVoteShare(candidate2),
+      thirdParty -> findReportEntryGroupsHavingSameDeltaVoteShare(thirdParty)
+    ).toSeq
+      .filter(_._2.nonEmpty)
+      .flatMap {
+        case (candidate, groups) =>
+          groups.map(group =>
+            s"Candidate $candidate has the same deltaVoteShare of ${group(0)
+              .deltaVoteSharesPerCandidate(candidate)} " + s"${group.size} times in succession, starting with original index ${group(0).originalIndex}")
+      }
   }
 
   def toJsonObj: Obj = {
@@ -39,6 +66,32 @@ final case class AnnotatedTimeSeriesReport(reportEntries: Seq[AnnotatedReportEnt
       "timeseries" -> Arr(reportEntries.map(_.toJsonObj): _*),
       "anomalies" -> Arr(anomalies.map(v => Str(v)): _*)
     )
+  }
+
+  @tailrec
+  private def findReportEntryGroupsHavingSameDeltaVoteShare(
+      candidate: Candidate,
+      startIndex: Int,
+      acc: Seq[Seq[ReportEntry]]): Seq[Seq[ReportEntry]] = {
+    assert(startIndex >= 0 && startIndex <= reportEntries.size)
+    assert(reportEntries(0).reportEntry.deltaVoteSharesPerCandidate.contains(candidate))
+
+    if (startIndex == reportEntries.size) {
+      acc
+    } else {
+      val firstDeltaVoteShare: BigDecimal = reportEntries(startIndex).reportEntry.deltaVoteSharesPerCandidate(candidate)
+
+      val group: Seq[AnnotatedReportEntry] = reportEntries
+        .slice(startIndex, reportEntries.size)
+        .takeWhile(_.reportEntry.deltaVoteSharesPerCandidate(candidate) == firstDeltaVoteShare)
+
+      // Recursive calls
+      if (group.sizeIs <= 1) {
+        findReportEntryGroupsHavingSameDeltaVoteShare(candidate, startIndex + 1, acc)
+      } else {
+        findReportEntryGroupsHavingSameDeltaVoteShare(candidate, startIndex + group.size, acc.appended(group.map(_.reportEntry)))
+      }
+    }
   }
 }
 

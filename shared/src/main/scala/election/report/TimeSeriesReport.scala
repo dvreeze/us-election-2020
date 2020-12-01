@@ -28,6 +28,13 @@ import ujson._
  * @author Chris de Vreeze
  */
 final case class TimeSeriesReport(reportEntries: Seq[ReportEntry]) {
+  require(reportEntries.nonEmpty, s"No report entries found")
+
+  def candidate1: Candidate = reportEntries(0).candidate1Data.candidate
+
+  def candidate2: Candidate = reportEntries(0).candidate2Data.candidate
+
+  def thirdParty: Candidate = reportEntries(0).thirdPartyData.candidate
 
   /**
    * Returns true if all report entries are in chronological order. If 2 subsequent entries have the same timestamp,
