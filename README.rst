@@ -125,7 +125,9 @@ Often, in many subsequent voting dumps, the percentage of votes in that dump for
 the chances of that happening naturally? Over a longer period of time, those "constants" go down a bit for Trump, and go up a bit
 for Biden, just enough to make Biden the winner (or to provide cover for Biden winning in other states). How convenient. These
 patterns look very unlikely to me in a fair election. Instead, they look very much like software-generated data. I suspect that
-experts in statistics can prove that these patterns are impossible in practice in an honest election.
+experts in statistics can prove that these patterns are impossible in practice in an honest election (if that is even needed,
+given that much better data must be available to the legal teams fighting this corruption). At least I can check for myself that
+several things are off in the JSON/CSV data used here.
 
 Add this to all other proof of voting fraud, and we have a huge crime perpetrated against the American people. For me personally,
 it is not so much about Republicans versus Democrats, but it is about truth, no matter how hard the truth is suppresssed by the
