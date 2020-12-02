@@ -5,7 +5,7 @@ US-election-2020
 This Scala project analyzes and helps analyze JSON data of the 2020-11-03 US presidential election.
 
 For the data sets and more background information (and a Python script to expose fraudulous data), see `the-switc`_.
-That Python script and JSON data got this project started.
+The availability of that Python script and JSON data set got this project started.
 
 Not being a US citizen myself, why would I worry about the validity of the US presidential elections in 2020?
 
@@ -14,20 +14,20 @@ on the political spectrum, these elections were stolen (like countless previous 
 of evidence to everyone paying attention, and I will not go there, other than analyzing the same JSON voting data that many
 others have analyzed as well.
 
-Of course the mainstream media prematurely declared a winner of the election, but they lie about everything of importance,
-as every sufficiently awake person knows.
+Of course the mainstream media prematurely declared a winner of the election, but they lie about everything of importance
+(don't get me started), so why would I believe anything they say?
 
 The election result data sets mentioned above were fed to the MSM, who used the data to their advantage, as if there were
 no anomalies to see in the data. See for example `fraud proven`_. Of course anyone can inspect the same data, and find some
 interesting things in there that the MSM failed to report on. Again, see `the-switc`_, where you can find a Python script
 analyzing the data. For a Github project that uses a cron job to periodically retrieve the data sets from the NYT web site,
-see `USElection2020-NYT-Results`_. That Github project is what was used as the source of data.
+see `USElection2020-EdisonResearch-Results`_. That Github project is what was used as the source of data.
 
 I wanted to have a look myself at the data, partly using code (written in Scala) doing the same as the Python script, and partly
 reorganizing the data in order to see some interesting patterns. Hence this small project.
 
-Indeed, the data shows massive fraud, and that's just in a JSON data set. Not to mention all other proof there is of the biggest
-election fraud in US history.
+Indeed, the data shows massive fraud, and that's just in a JSON data set, analyzed in isolation. Not to mention all other proof
+there is of the biggest election fraud in US history.
 
 Anyway, we should never be silent about the truth about everything of importance (now more than ever, with the CV19 crisis being
 the biggest hoax ever perpetrated). There can be no liberty without truth, so truth must be defended vigorously.
@@ -70,32 +70,42 @@ Below directories <report>, <csv-report>, <annotated-report> and <sorted-report>
 
 Program FindAnomalies can be invoked as follows (here it is shown for michigan)::
 
-   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 -M election.console.FindAnomalies -- <input-data>/michigan.json
+   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
+     -M election.console.FindAnomalies \
+     -- <input-data>/michigan.json
 
 Program FindAnomalies performs checks and extracts statistics similar to the Python script found at `the-switc`_.
 Personally I find it hard to reliably compute the votes that can be considered lost or switched. That being said, I highly respect
-the work done by the author of the Python script, without which I probably would not have started this project.
+the work done by the author of the Python script, without which I probably would not have started this small project.
 
 It would be nice to not just see the vote shares and total votes overall in the timeseries, but turn the data into a report
 where each entry in the timeseries shows the total votes per candidate as well, along with the deltas compared to the preceding
 timeseries entry. That's what program CreateReport does::
 
-   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 -M election.console.CreateReport -- <input-data> <report>
+   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
+     -M election.console.CreateReport \
+     -- <input-data> <report>
 
 Several other programs work on the output of this program, in the <report> directory. For example, program ConvertReportToCsv,
 which transforms the report JSON into CSV files, containing exactly the same data::
 
-   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 -M election.console.ConvertReportToCsv -- <report> <csv-report>
+   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
+     -M election.console.ConvertReportToCsv \
+     -- <report> <csv-report>
 
 Of course, these CSV files can be manipulated (e.g. sorted) in any way possible, once loaded into a spreadsheet program.
 
-To annotate the JSON reports with "anomalies" per "data record", run program CreateAnnotatedReport::
+To annotate the JSON reports with "anomalies" per "data record" or across "data records", run program CreateAnnotatedReport::
 
-   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 -M election.console.CreateAnnotatedReport -- <report> <annotated-report>
+   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
+     -M election.console.CreateAnnotatedReport \
+     -- <report> <annotated-report>
 
 To sort the JSON reports according to some predefined sort criterium, run program SortReport (here sorting on MaxDeltaVotes, largest first)::
 
-   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 -M election.console.SortReport -- <report> <sorted-report> MaxDeltaVotes
+   cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
+     -M election.console.SortReport \
+     -- <report> <sorted-report> MaxDeltaVotes
 
 Of course we could do the sorting on the CSV files that are output of the ConvertReportToCsv program instead, once loaded in
 a spreadsheet program.
@@ -109,22 +119,22 @@ the programs mentioned above. For the human reader, it may be best to analyze th
 For example, the impossible timeseries entries (for Michigan and Pennsylvania) mentioned in `Sarah Westall about voting fraud`_
 or `natural news about voting fraud`_ are easy to reproduce here. See also `Sharyl Attkisson about the voting fraud`_.
 
-There is also a very interesting pattern that can be found (in the CSV files or JSON reports) for the most disputed states.
+There is also a very interesting pattern that can be found (in the CSV files or JSON reports), especially for the battleground states.
 Often, in many subsequent voting dumps, the percentage of votes in that dump for Trump and for Biden are constants. Now what are
 the chances of that happening naturally? Over a longer period of time, those "constants" go down a bit for Trump, and go up a bit
 for Biden, just enough to make Biden the winner (or to provide cover for Biden winning in other states). How convenient. These
 patterns look very unlikely to me in a fair election. Instead, they look very much like software-generated data. I suspect that
-experts in statistics can prove that these patterns are impossible in practice, given the election is an honest one.
+experts in statistics can prove that these patterns are impossible in practice in an honest election.
 
-Add this to all other proof of voting fraud, and we have a huge fraud perpetrated against the American people. For me personally,
+Add this to all other proof of voting fraud, and we have a huge crime perpetrated against the American people. For me personally,
 it is not so much about Republicans versus Democrats, but it is about truth, no matter how hard the truth is suppresssed by the
-"media" and tech giants. Again, `there is no freedom without truth`_. How relevant the main message of that 2016 article is today
-(November 2020)!
+"media" and tech giants. I mean, they even censor the US president. Let that sink in for a while. Again,
+`there is no freedom without truth`_. How relevant the main message of that 2016 article is today (November 2020)!
 
 
 .. _`the-switc`: https://thedonald.win/p/11Q8XQIWRs/-happening-ive-updated-the-switc/
 .. _`fraud proven`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
-.. _`USElection2020-NYT-Results`: https://github.com/favstats/USElection2020-NYT-Results
+.. _`USElection2020-EdisonResearch-Results`: https://github.com/favstats/USElection2020-EdisonResearch-Results
 .. _`report-csv`: https://github.com/dvreeze/us-election-2020/blob/master/jvm/src/main/resources/report-csv
 .. _`readme-data.rst`: https://github.com/dvreeze/us-election-2020/blob/master/jvm/src/main/resources/EdisonData/readme-data.rst
 .. _`Coursier`: https://get-coursier.io/
