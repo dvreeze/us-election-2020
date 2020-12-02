@@ -21,7 +21,8 @@ The election result data sets mentioned above were fed to the MSM, who used the 
 no anomalies to see in the data. See for example `fraud proven`_. Of course anyone can inspect the same data, and find some
 interesting things in there that the MSM failed to report on. Again, see `the-switc`_, where you can find a Python script
 analyzing the data. For a Github project that uses a cron job to periodically retrieve the data sets from the NYT web site,
-see `USElection2020-EdisonResearch-Results`_. That Github project is what was used as the source of data.
+see `USElection2020-EdisonResearch-Results`_. That Github project (or another repo from the same Github user) is what was used
+as the source of data.
 
 I wanted to have a look myself at the data, partly using code (written in Scala) doing the same as the Python script, and partly
 reorganizing the data in order to see some interesting patterns. Hence this small project.
@@ -68,7 +69,7 @@ The "cs launch" command can then be used to run the programs.
 First prepare some local data directories. The JSON input files (one per state) are below assumed to be in directory <input-data>.
 Below directories <report>, <csv-report>, <annotated-report> and <sorted-report> (at first empty) will be used as well.
 
-Program FindAnomalies can be invoked as follows (here it is shown for michigan)::
+Program FindAnomalies can be invoked as follows (here it is shown for Michigan)::
 
    cs launch eu.cdevreeze.us-election:us-election_2.13:0.2.0 \
      -M election.console.FindAnomalies \
@@ -113,7 +114,7 @@ a spreadsheet program.
 Some results
 ============
 
-Many of the "anomalies" in the voting data that have been found and documented on the internet, can be reproduced here, using
+Many of the "anomalies" in the voting data that have been found and documented on the internet can be reproduced here, using
 the programs mentioned above. For the human reader, it may be best to analyze the CSV files in a spreadsheet program.
 
 For example, the impossible timeseries entries (for Michigan and Pennsylvania) mentioned in `Sarah Westall about voting fraud`_
