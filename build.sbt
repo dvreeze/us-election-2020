@@ -10,7 +10,7 @@ lazy val commonSettings = Seq(
   name         := "us-election",
   description  := "Analysis of the 2020 US election data",
   organization := "eu.cdevreeze.us-election",
-  version      := "0.2.0-SNAPSHOT",
+  version      := "0.2.0",
 
   scalaVersion       := scalaVer,
   crossScalaVersions := crossScalaVer,
