@@ -134,6 +134,37 @@ it is not so much about Republicans versus Democrats, but it is about truth, no 
 "media" and tech giants. I mean, they even censor the US president. Let that sink in for a while. Again,
 `there is no freedom without truth`_. How relevant the main message of that 2016 article is today (November 2020)!
 
+Update 2020-12-05
+=================
+
+On December 2, 2020, US president Donald Trump made a speech on the voter fraud. See `Trump speech on voter fraud`_.
+I checked a few things Donald Trump said against the (CSV) data in this project, in directory `report-csv`_.
+
+According to Donald Trump, he suddenly started losing to Joe Biden in Wisconsin, at 3:42 in the morning, while being comfortably
+in the lead up to that point. Let's check that against the CSV data. The time zone would be CST (Central Standard Time) in Wisconsin.
+That's 9:42 Z (Zulu time zone), in the morning of 2020-11-04. As can be seen in the CSV file(s) for Wisconsin, at
+2020-11-04T09:42:20Z, there is a big batch of 168386 votes, the vast majority of them for Biden, and the 3rd party even losing
+some votes! Indeed, Trump went from a rather comfortable lead to a slight loss in that single batch. This batch of 168386 votes
+happens to be the biggest batch of votes (deltaVotes in the CSV file) in the file. In that batch, less than 15% of that batch
+(25163 votes) went to Trump and more than 85% (143379 votes) went to Biden, while the 3rd party miraculously lost some votes.
+That's quite a deviation from the average vote shares of Trump and Biden, "coincidentally" in the largest vote dump.
+
+There are even more peculiarities in the Wisconsin vote dumps leading up to that point, where the vote shares for Trump and Biden
+per batch were constant to a large extent. This seems to have set the stage for the vote switching effect of the vote dump that
+Mr. Trump talks about, as far as I am concerned. All in all, Mr. Trump's claim about the vote switch in Wisconsin is visible in the data.
+
+The vote dump of 149772 votes coming in unexpectedly in Michigan that Donald Trump talks about is also visible in the CSV file.
+It was at 2020-11-04T11:31:53Z in the CSV file. That's 06:31 EST, which is the local time in Detroit, Michigan, and that's the
+local time mentioned by Donald Trump. This vote dump is the 3rd biggest vote dump in the file, and it gave only 4% of the votes
+in the dump to Trump and 94.3% of the votes in the dump to Biden. Up to that point, Trump was leading comfortably, but that
+changed a lot with this dump, to set the stage for a gradual switch from a Trump lead to a Biden one. Again, Donald Trump is right
+in mentioning this highly suspect vote dump.
+
+Of course, the MSM has had access to the same data all the time, and they could have found the same anomalies and reported about them.
+Enough said about the MSM. To end with a positive note, this fraud awakens a lot of people to the nature of the old imploding reality
+(based on control by fear and lies, to the benefit of a small elite and at the expense of everyone else). The US can do a lot better
+than that, and I'm confident that many good courageous people will liberate and save their country, followed by many other countries.
+Yet we are all needed in the information war, in particular by spreading truth.
 
 .. _`the-switc`: https://thedonald.win/p/11Q8XQIWRs/-happening-ive-updated-the-switc/
 .. _`fraud proven`: https://sarahwestall.com/trump-won-fraud-proven-analysis-of-voting-data-shows-exactly-what-happened/
@@ -145,3 +176,4 @@ it is not so much about Republicans versus Democrats, but it is about truth, no 
 .. _`natural news about voting fraud`: https://www.naturalnews.com/2020-11-11-election-data-analyzed-votes-switched-biden-software.html
 .. _`Sharyl Attkisson about the voting fraud`: https://sharylattkisson.com/2020/11/what-youve-been-asking-for-a-fairly-complete-list-of-some-of-the-most-significant-claims-of-2020-election-miscounts-errors-or-fraud/
 .. _`there is no freedom without truth`: https://www.paulcraigroberts.org/2016/02/02/there-is-no-freedom-without-truth-paul-craig-roberts/
+.. _`Trump speech on voter fraud`: https://www.rev.com/blog/transcripts/donald-trump-speech-on-election-fraud-claims-transcript-december-2
